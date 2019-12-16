@@ -70,7 +70,7 @@ metadata:
   name: file-server-mapping
   namespace: file-server
 spec:
-  prefix: /files
+  prefix: /files/
   rewrite: /
   service: file-server.file-server:8080
 ---

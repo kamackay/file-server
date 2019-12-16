@@ -36,11 +36,11 @@ func main() {
 
 	engine.GET("/*root", func(ctx *gin.Context) {
 		file := root + ctx.Request.URL.Path
-		if fi, err := os.Stat(file); err != nil {
-			if os.IsNotExist(err) {
-				ctx.String(404, "File Not Found")
-			} else {
+		if fi, exists, err := GetFile(file); err != nil {
+			if exists {
 				ctx.String(500, "Unknown Filesystem issue")
+			} else {
+				ctx.String(404, "File Not Found")
 			}
 		} else {
 			if fi.IsDir() {
@@ -51,10 +51,32 @@ func main() {
 					for _, f := range files {
 						paths = append(paths, f.Name())
 					}
+					fmt.Printf("Found %d paths", len(paths))
 					ctx.JSON(200, paths)
 				}
 			} else {
 				ctx.File(file)
+			}
+		}
+	})
+
+	engine.DELETE("/*root", func(ctx *gin.Context) {
+		file := root + ctx.Request.URL.Path
+		if fi, exists, err := GetFile(file); err != nil {
+			if exists {
+				ctx.String(404, "File Not Found")
+			} else {
+				ctx.String(500, "Unknown Filesystem issue")
+			}
+		} else {
+			if fi.IsDir() {
+				ctx.String(400, "Cannot Delete Folder")
+			} else {
+				if err := os.Remove(file); err != nil {
+					ctx.String(500, "Could Not Delete File")
+				} else {
+					ctx.String(200, "Successfully Deleted File")
+				}
 			}
 		}
 	})

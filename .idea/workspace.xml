@@ -1,7 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="6b9072e9-2c73-40ee-987c-97bb9df6f1cf" name="Default Changelist" comment="" />
+    <list default="true" id="6b9072e9-2c73-40ee-987c-97bb9df6f1cf" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/getFile.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/utils/utils.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/index.go" beforeDir="false" afterPath="$PROJECT_DIR$/index.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/k8s.yml" beforeDir="false" afterPath="$PROJECT_DIR$/k8s.yml" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -15,7 +21,13 @@
     </option>
   </component>
   <component name="GOROOT" path="/usr/local/Cellar/go/1.13.4/libexec" />
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
   <component name="ProjectId" id="1Uw8GE4xcxsUeqBrJTXcRYHjk5V" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true">
+    <ConfirmationsSetting value="2" id="Add" />
+  </component>
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showExcludedFiles" value="true" />
@@ -48,5 +60,11 @@
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="1" />
+  </component>
+  <component name="WindowStateProjectService">
+    <state x="1983" y="-10" key="com.goide.refactor.move.GoMoveDeclarationDialog" timestamp="1576523134323">
+      <screen x="1680" y="-576" width="1050" height="1680" />
+    </state>
+    <state x="1983" y="-10" key="com.goide.refactor.move.GoMoveDeclarationDialog/1680.-576.1050.1680/0.0.1680.1050/-240.-1200.1920.1200@1680.-576.1050.1680" timestamp="1576523134323" />
   </component>
 </project>
