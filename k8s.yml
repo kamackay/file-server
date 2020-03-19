@@ -26,7 +26,7 @@ spec:
   accessModes:
     - ReadWriteOnce
   capacity:
-    storage: 10Gi
+    storage: 5Gi
   hostPath:
     path: /storage/files
   persistentVolumeReclaimPolicy: Retain
@@ -48,10 +48,12 @@ spec:
       labels:
         app: file-server
     spec:
+      imagePullSecrets:
+        - name: regcred
       restartPolicy: Always
       containers:
         - name: server
-          image: kamackay/file-server:latest
+          image: registry.gitlab.com/kamackay/filer:latest
           imagePullPolicy: Always
           env:
             - name: PORT
@@ -64,13 +66,24 @@ spec:
           hostPath:
               path: "/storage/files"
 ---
-apiVersion: getambassador.io/v1
-kind: Mapping
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
 metadata:
-  name: file-server-mapping
+  name: filer-ingress
   namespace: file-server
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
 spec:
-  prefix: /files/
-  rewrite: /
-  service: file-server.file-server:8080
+  tls:
+    - hosts:
+        - files.keithm.io
+      secretName: files-cert
+  rules:
+    - host: files.keithm.io
+      http:
+        paths:
+          - backend:
+              serviceName: file-server
+              servicePort: 8080
 ---
