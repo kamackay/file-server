@@ -2,17 +2,19 @@ package main
 
 import (
 	"fmt"
+	"github.com/gin-contrib/cache/persistence"
 	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os"
 	"path"
-	"regexp"
 	"time"
 
+	"github.com/gin-contrib/cache"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-contrib/logger"
 	"github.com/gin-gonic/gin"
+	"github.com/robfig/cron/v3"
 	"gitlab.com/kamackay/go-api/logging"
 	"gopkg.in/yaml.v2"
 )
@@ -24,23 +26,28 @@ func main() {
 		root = "/files"
 	}
 
-	(&Server{
-		exclude: regexp.MustCompile("\\.meta$"),
-		log:     logging.GetLogger(),
-		engine:  gin.Default(),
-		root:    root,
-	}).Start()
+	NewServer().Start()
 }
 
 type Server struct {
-	log     *logrus.Logger
-	engine  *gin.Engine
-	root    string
-	exclude *regexp.Regexp
+	log        *logrus.Logger
+	engine     *gin.Engine
+	root       string
+	store      *persistence.InMemoryStore
+	cronRunner *cron.Cron
+}
+
+func NewServer() *Server {
+	return &Server{
+		log:        logging.GetLogger(),
+		engine:     gin.Default(),
+		root:       root,
+		cronRunner: cron.New(),
+	}
 }
 
 func (this *Server) Start() {
-	//this.engine.Use(brotli.Brotli(brotli.DefaultCompression))
+	this.store = persistence.NewInMemoryStore(time.Second)
 	this.engine.Use(gzip.Gzip(gzip.BestCompression))
 	this.engine.Use(cors.Default())
 	this.engine.Use(logger.SetLogger())
@@ -48,46 +55,45 @@ func (this *Server) Start() {
 	this.engine.PUT("/*root", this.uploadFile())
 	this.engine.POST("/*root", this.uploadFile())
 
-	this.engine.GET("/*root", func(ctx *gin.Context) {
-		filename := root + ctx.Request.URL.Path
-		//if this.exclude.MatchString(filename) {
-		//	this.error(ctx, "Not allowed to Read Metadata files")
-		//	return
-		//}
-		if fi, exists, err := GetFile(filename); err != nil {
-			if exists {
-				this.unknownError(ctx)
-			} else {
-				ctx.String(404, "File Not Found")
-			}
-		} else {
-			if fi.IsDir() {
-				if files, err := ioutil.ReadDir(filename); err != nil {
-					ctx.String(500, "Could Not get Contents of Directory")
-				} else {
-					paths := make([]string, 0)
-					for _, f := range files {
-						if !this.exclude.MatchString(f.Name()) {
-							paths = append(paths, f.Name())
-						}
-					}
-					fmt.Printf("Found %d paths", len(paths))
-					ctx.JSON(200, paths)
-				}
-			} else {
-				if data, err := ioutil.ReadFile(filename); err != nil {
+	this.engine.GET("/*root", cache.CachePage(this.store, time.Minute*5,
+		func(ctx *gin.Context) {
+			filename := root + ctx.Request.URL.Path
+			//if this.exclude.MatchString(filename) {
+			//	this.error(ctx, "Not allowed to Read Metadata files")
+			//	return
+			//}
+			if fi, exists, err := GetFile(filename); err != nil {
+				if exists {
 					this.unknownError(ctx)
 				} else {
-					var file File
-					if err := yaml.Unmarshal(data, &file); err != nil {
+					ctx.String(404, "File Not Found")
+				}
+			} else {
+				if fi.IsDir() {
+					if files, err := ioutil.ReadDir(filename); err != nil {
+						ctx.String(500, "Could Not get Contents of Directory")
+					} else {
+						paths := make([]string, 0)
+						for _, f := range files {
+							paths = append(paths, f.Name())
+						}
+						fmt.Printf("Found %d paths", len(paths))
+						ctx.JSON(200, paths)
+					}
+				} else {
+					if data, err := ioutil.ReadFile(filename); err != nil {
 						this.unknownError(ctx)
 					} else {
-						ctx.Data(200, file.ContentType, []byte(file.Data))
+						var file File
+						if err := yaml.Unmarshal(data, &file); err != nil {
+							this.unknownError(ctx)
+						} else {
+							ctx.Data(200, file.ContentType, []byte(file.Data))
+						}
 					}
 				}
 			}
-		}
-	})
+		}))
 
 	this.engine.DELETE("/*root", func(ctx *gin.Context) {
 		file := this.root + ctx.Request.URL.Path
@@ -137,7 +143,7 @@ func (this *Server) uploadFile() gin.HandlerFunc {
 			ctx.String(400, "Could Not Read File")
 		} else {
 			dir := path.Dir(filename)
-			if err := os.Mkdir(dir, 0644); err != nil {
+			if err := os.MkdirAll(dir, 0644); err != nil {
 				// Try anyways
 				fmt.Println(err)
 			}

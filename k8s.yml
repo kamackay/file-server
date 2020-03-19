@@ -55,6 +55,13 @@ spec:
         - name: server
           image: registry.gitlab.com/kamackay/filer:latest
           imagePullPolicy: Always
+          readinessProbe:
+            httpGet:
+              port: 8080
+              path: /
+            initialDelaySeconds: 0
+            timeoutSeconds: 1
+            periodSeconds: 1
           env:
             - name: PORT
               value: "8080"

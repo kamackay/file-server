@@ -13,7 +13,7 @@ RUN apk upgrade --update --no-cache && \
 
 ADD ./go.mod ./
 
-RUN curl https://raw.githubusercontent.com/google/brotli/master/go/cbrotli/BUILD > $GOPATH/BUILD
+#RUN curl https://raw.githubusercontent.com/google/brotli/master/go/cbrotli/BUILD > $GOPATH/BUILD
 
 RUN go mod download && \
     go mod verify
@@ -23,7 +23,7 @@ ADD ./ ./
 RUN go build -o server ./*.go && cp ./server /app/
 
 FROM alpine:latest
-WORKDIR /app
-COPY --from=builder /app/server /app/
 
-CMD ["./server"]
+COPY --from=builder /app/server /server
+
+CMD ["/server"]
