@@ -13,8 +13,9 @@ RUN apk upgrade --update --no-cache && \
 
 ADD ./go.mod ./
 
-RUN curl https://raw.githubusercontent.com/google/brotli/master/go/cbrotli/BUILD > $GOPATH/BUILD && \
-    go mod download && \
+RUN curl https://raw.githubusercontent.com/google/brotli/master/go/cbrotli/BUILD > $GOPATH/BUILD
+
+RUN go mod download && \
     go mod verify
 
 ADD ./ ./

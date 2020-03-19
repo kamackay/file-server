@@ -9,4 +9,5 @@ require (
 	github.com/gin-contrib/logger v0.0.2
 	github.com/gin-gonic/gin v1.5.0
 	gitlab.com/kamackay/go-api v0.0.0-20200319132303-34a852bff43d
+	gopkg.in/yaml.v2 v2.2.2
 )

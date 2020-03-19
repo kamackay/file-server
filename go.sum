@@ -1,6 +1,8 @@
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/Solorad/gin-brotli v0.0.0-20190811031523-1822086d7bf8 h1:+OQBkHnk/KIwUZDcfebL7UpWRSPb7hqFF4VF6tyxKhk=
 github.com/Solorad/gin-brotli v0.0.0-20190811031523-1822086d7bf8/go.mod h1:cYKXz1gve02IcJ8cQxBRm6mLa6xBimpx5G3qY3UcT0I=
+github.com/anargu/gin-brotli v0.0.0-20181125030057-08bb9d7c52e2 h1:Ga73QKNrHDQnVMbg9QuRjYG9Efw/GJ886nN3T24rQpU=
+github.com/anargu/gin-brotli v0.0.0-20181125030057-08bb9d7c52e2/go.mod h1:An6EZVjZVH0aYaIk7lKunR3Kpj8KhILqoePEuF3GFrE=
 github.com/andybalholm/brotli v0.0.0-20190725155243-ed0fd649404d h1:jL1K3nFDuw0oK4jTF6plT3JaTx47seAo6U2s7q4yRKw=
 github.com/andybalholm/brotli v0.0.0-20190725155243-ed0fd649404d/go.mod h1:+lx6/Aqd1kLJ1GQfkvOnaZ1WGmLpMpbprPuIOOZX30U=
 github.com/coreos/go-systemd v0.0.0-20190321100706-95778dfbb74e/go.mod h1:F5haX7vjVVG0kc13fIWeqUViNPyEJxv/OmvnBo0Yme4=
