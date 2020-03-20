@@ -20,10 +20,10 @@ RUN go mod download && \
 
 ADD ./ ./
 
-RUN go build -o server ./*.go && cp ./server /app/
+RUN go build -o application.file ./*.go && cp ./application.file /app/
 
 FROM alpine:latest
 
-COPY --from=builder /app/server /server
+COPY --from=builder /app/application.file /server
 
 CMD ["/server"]
