@@ -6,12 +6,10 @@ import (
 	"github.com/gin-contrib/cache/persistence"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/gzip"
-	"github.com/gin-contrib/logger"
 	"github.com/gin-gonic/gin"
 	"github.com/robfig/cron/v3"
 	"github.com/sirupsen/logrus"
 	"gitlab.com/kamackay/filer/auth"
-	"gitlab.com/kamackay/go-api/logging"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"os"
@@ -29,8 +27,12 @@ type Server struct {
 }
 
 func New(root string) *Server {
+	log := logrus.New()
+	log.SetFormatter(&logrus.TextFormatter{
+		FullTimestamp: true,
+	})
 	return &Server{
-		log:        logging.GetLogger(),
+		log:        log,
 		engine:     gin.Default(),
 		root:       root,
 		cronRunner: cron.New(),
@@ -40,14 +42,15 @@ func New(root string) *Server {
 
 func (this *Server) Start() {
 	this.store = persistence.NewInMemoryStore(time.Second)
+	this.engine.Use(this.auth.Bind())
 	this.engine.Use(gzip.Gzip(gzip.BestCompression))
 	this.engine.Use(cors.Default())
-	this.engine.Use(logger.SetLogger())
+	//this.engine.Use(logger.SetLogger())
 
 	this.engine.PUT("/*root", this.uploadFile())
 	this.engine.POST("/*root", this.uploadFile())
 
-	this.engine.GET("/*root", cache.CachePage(this.store, time.Minute*5,
+	this.engine.GET("/*root", cache.CachePage(this.store, 5*time.Minute,
 		func(ctx *gin.Context) {
 			filename := this.root + ctx.Request.URL.Path
 			if fi, exists, err := this.getFile(filename); err != nil {
@@ -61,6 +64,10 @@ func (this *Server) Start() {
 					if files, err := ioutil.ReadDir(filename); err != nil {
 						ctx.String(500, "Could Not get Contents of Directory")
 					} else {
+						if !this.auth.AllowedToViewFolder(ctx) {
+							ctx.JSON(200, make([]string, 0))
+							return
+						}
 						paths := make([]string, 0)
 						for _, f := range files {
 							paths = append(paths, f.Name())
