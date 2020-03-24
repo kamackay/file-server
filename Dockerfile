@@ -8,12 +8,9 @@ RUN apk upgrade --update --no-cache && \
             git \
             gcc \
             curl \
-            linux-headers \
-            brotli
+            linux-headers
 
 ADD ./go.mod ./
-
-#RUN curl https://raw.githubusercontent.com/google/brotli/master/go/cbrotli/BUILD > $GOPATH/BUILD
 
 RUN go mod download && \
     go mod verify

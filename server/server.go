@@ -150,6 +150,21 @@ func (this *Server) uploadFile() gin.HandlerFunc {
 	}
 }
 
+func (this *Server) readConfig() *Server {
+	var config Config
+	if bytes, err := ioutil.ReadFile("/config.yml"); err != nil {
+		this.log.Warnf("Could Not Read Config File")
+		return this
+	} else if err := yaml.Unmarshal(bytes, &config); err != nil {
+		this.log.Warnf("Could not Unmarshal Config Object")
+		return this
+	}
+	return this
+}
+
+type Config struct {
+}
+
 type File struct {
 	Data        string `yaml:"data"`
 	ContentType string `yaml:"contentType"`
