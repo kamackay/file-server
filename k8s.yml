@@ -13,6 +13,24 @@ spec:
   selector:
     service: file-server
 ---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: filer-config
+  namespace: file-server
+data:
+  config.yml: |
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: filer-config
+  namespace: file-server
+data:
+  config.yml: |
+
+---
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -48,6 +66,16 @@ spec:
           volumeMounts:
             - name: file-system
               mountPath: /files
+            - name: config
+              mountPath: /config.yml
+              subPath: config.yml
+      volumes:
+        - name: config
+          configMap:
+            name: filer-config
+        - name: config
+          configMap:
+            name: filer-config
   volumeClaimTemplates:
     - spec:
         accessModes:

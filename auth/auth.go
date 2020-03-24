@@ -3,12 +3,15 @@ package auth
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v2"
+	"io/ioutil"
 	"net/http"
 	"strings"
 )
 
 type Authorizer struct {
-	log *logrus.Logger
+	log    *logrus.Logger
+	config *AuthConfig
 }
 
 func New() *Authorizer {
@@ -17,8 +20,10 @@ func New() *Authorizer {
 		FullTimestamp: true,
 		ForceColors:   true,
 	})
+	config := readConfigFile(log)
 	return &Authorizer{
-		log: log,
+		log:    log,
+		config: config,
 	}
 }
 
@@ -64,4 +69,20 @@ func (this *Authorizer) requiresValidation(ctx *gin.Context) bool {
 func (this *Authorizer) validate(ctx *gin.Context) bool {
 	authHeader := ctx.GetHeader("Authorization")
 	return len(authHeader) > 0
+}
+
+type AuthConfig struct {
+	DefaultAuth string
+}
+
+func readConfigFile(log *logrus.Logger) *AuthConfig {
+	var config AuthConfig
+	if bytes, err := ioutil.ReadFile("/config.yml"); err != nil {
+		log.Warnf("Could Not Read Config File")
+		return &config
+	} else if err := yaml.Unmarshal(bytes, &config); err != nil {
+		log.Warnf("Could not Unmarshal Config Object")
+		return &config
+	}
+	return &config
 }
