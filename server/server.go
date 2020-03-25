@@ -36,7 +36,7 @@ func New(root string) *Server {
 		engine:     gin.Default(),
 		root:       root,
 		cronRunner: cron.New(),
-		auth:       auth.New(),
+		auth:       auth.New(root),
 	}
 }
 
@@ -72,7 +72,6 @@ func (this *Server) Start() {
 						for _, f := range files {
 							paths = append(paths, f.Name())
 						}
-						fmt.Printf("Found %d paths", len(paths))
 						ctx.JSON(200, paths)
 					}
 				} else {

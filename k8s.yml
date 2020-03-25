@@ -25,11 +25,13 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: filer-config
+  name: filer-secret
   namespace: file-server
 data:
-  config.yml: |
-
+  auth.yml: |
+    defaultCreds:
+      username: keith
+      password: super-ultra-secret
 ---
 apiVersion: apps/v1
 kind: StatefulSet
@@ -69,13 +71,16 @@ spec:
             - name: config
               mountPath: /config.yml
               subPath: config.yml
+            - name: auth
+              mountPath: /auth.yml
+              subPath: auth.yml
       volumes:
         - name: config
           configMap:
             name: filer-config
-        - name: config
+        - name: auth
           configMap:
-            name: filer-config
+            name: filer-secret
   volumeClaimTemplates:
     - spec:
         accessModes:
