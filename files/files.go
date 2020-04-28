@@ -4,7 +4,9 @@ import (
 	"errors"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
+	"net/http"
 	"strings"
+	"time"
 )
 
 const (
@@ -77,11 +79,31 @@ func ReadMetaFile(filename string) (*File, error) {
 	}
 }
 
+func DownloadFile(url string) (*File, error) {
+	if resp, err := http.Get(url); err != nil {
+		return nil, err
+	} else {
+		defer resp.Body.Close()
+		if body, err := ioutil.ReadAll(resp.Body); err != nil {
+			return nil, err
+		} else {
+			return &File{
+				Name:        url,
+				Data:        string(body),
+				ContentType: resp.Header.Get("Content-Type"),
+				LastUpdated: time.Now().UnixNano(),
+				Protected:   false,
+			}, nil
+		}
+	}
+}
+
 type File struct {
 	Name        string `yaml:"name"`
 	Data        string `yaml:"data"`
 	ContentType string `yaml:"contentType"`
 	LastUpdated int64  `yaml:"lastUpdated"`
+	Protected   bool   `yaml:"protected"`
 }
 
 type JSONFile struct {

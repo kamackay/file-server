@@ -49,7 +49,7 @@ func (this *Server) Start() {
 	this.engine.Use(cors.Default())
 
 	this.engine.PUT("/*root", this.uploadFile())
-	this.engine.POST("/*root", this.uploadFile())
+	this.engine.POST("/*root", this.postFile())
 
 	this.engine.GET("/*root", cache.CachePage(this.store, 5*time.Minute,
 		func(ctx *gin.Context) {
@@ -124,6 +124,37 @@ func (this *Server) Start() {
 	}
 }
 
+// Use POST method to request server to download files from other location
+func (this *Server) postFile() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		switch ctx.ContentType() {
+		case "text/plain":
+			if data, err := ctx.GetRawData(); err != nil {
+				ctx.String(500, "Unable to read URL")
+			} else if file, err := files.DownloadFile(string(data)); err != nil {
+				this.log.Error("Error Pulling File", err)
+				ctx.String(500, "Unable to download File")
+			} else {
+				file.Name = this.root + ctx.Request.URL.Path
+				if err := files.WriteFile(*file); err != nil {
+					ctx.String(500, "Unable to write File")
+				} else {
+					this.success(ctx)
+				}
+			}
+			return
+		default:
+			ctx.String(400, "Unsure how to use Request")
+		}
+	}
+}
+
+func (this *Server) success(ctx *gin.Context) {
+	ctx.String(200, "Written Successfully")
+	_ = this.store.Delete(cache.CreateKey(ctx.Request.RequestURI))
+	_ = this.store.Delete(cache.CreateKey("/"))
+}
+
 func (this *Server) uploadFile() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		filename := this.root + ctx.Request.URL.Path
@@ -141,11 +172,10 @@ func (this *Server) uploadFile() gin.HandlerFunc {
 				ContentType: ctx.ContentType(),
 				LastUpdated: time.Now().UnixNano(),
 				Name:        filename,
+				Protected:   false,
 			})
 			if err == nil {
-				ctx.String(200, "Written Successfully")
-				_ = this.store.Delete(cache.CreateKey(ctx.Request.RequestURI))
-				_ = this.store.Delete(cache.CreateKey("/"))
+				this.success(ctx)
 			} else {
 				this.log.Error("Error Writing File", err)
 				ctx.String(500, "Error Writing File")

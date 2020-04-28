@@ -3,6 +3,7 @@ package auth
 import (
 	"encoding/base64"
 	"fmt"
+	"gitlab.com/kamackay/filer/files"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -77,7 +78,12 @@ func (this *Authorizer) AllowedToViewFolder(ctx *gin.Context) bool {
 func (this *Authorizer) requiresValidation(ctx *gin.Context) bool {
 	switch strings.ToUpper(ctx.Request.Method) {
 	case "GET":
-		return ctx.Request.RequestURI != "/favicon.ico"
+		meta, err := files.ReadMetaFile(this.fsRoot + ctx.Request.URL.Path)
+		if err != nil {
+			return true
+		} else {
+			return meta.Protected
+		}
 	case "PUT":
 	case "POST":
 	case "DELETE":

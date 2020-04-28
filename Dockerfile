@@ -21,6 +21,8 @@ RUN go build -o application.file ./*.go && cp ./application.file /app/
 
 FROM alpine:latest
 
+RUN apk upgrade --update --no-cache
+
 COPY --from=builder /app/application.file /server
 
 CMD ["/server"]
