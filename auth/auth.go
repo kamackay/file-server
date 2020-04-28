@@ -1,20 +1,25 @@
 package auth
 
 import (
+	"encoding/base64"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"os"
+	"strings"
+
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
-	"io/ioutil"
-	"net/http"
-	"strings"
 )
 
 type Authorizer struct {
 	log    *logrus.Logger
 	config *Config
+	fsRoot string
 }
 
-func New() *Authorizer {
+func New(fsRoot string) *Authorizer {
 	log := logrus.New()
 	log.SetFormatter(&logrus.TextFormatter{
 		FullTimestamp: true,
@@ -24,15 +29,22 @@ func New() *Authorizer {
 	return &Authorizer{
 		log:    log,
 		config: config,
+		fsRoot: fsRoot,
 	}
 }
 
 func (this *Authorizer) Bind() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		if this.Validate(ctx) {
+		fsPath := this.fsRoot + ctx.Request.URL.Path
+		if fi, err := os.Stat(fsPath); err == nil && fi.IsDir() {
+			// This is a directory
 			ctx.Next()
 		} else {
-			return
+			if this.Validate(ctx) {
+				ctx.Next()
+			} else {
+				return
+			}
 		}
 	}
 }
@@ -40,6 +52,7 @@ func (this *Authorizer) Bind() gin.HandlerFunc {
 //Validate Return True if this request was valid
 func (this *Authorizer) Validate(ctx *gin.Context) bool {
 	this.log.Infof("Validating Request on `%s`", ctx.Request.URL.Path)
+
 	if this.requiresValidation(ctx) {
 		if this.validate(ctx) {
 			return true
@@ -58,25 +71,33 @@ func (this *Authorizer) Decline(ctx *gin.Context) {
 }
 
 func (this *Authorizer) AllowedToViewFolder(ctx *gin.Context) bool {
-	return false
+	return true
 }
 
 func (this *Authorizer) requiresValidation(ctx *gin.Context) bool {
-	method := ctx.Request.Method
-	return strings.ToUpper(method) != "GET"
+	switch strings.ToUpper(ctx.Request.Method) {
+	case "GET":
+		return true
+	case "PUT":
+	case "POST":
+	case "DELETE":
+		return true
+	default:
+		return false
+	}
 }
 
 func (this *Authorizer) validate(ctx *gin.Context) bool {
 	authHeader := ctx.GetHeader("Authorization")
-	return authHeader == this.getCredsEncoded()
-}
-
-func (this *Authorizer) getCredsEncoded() string {
-
+	validAuth := "Basic " +
+		base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s",
+			this.config.DefaultAuth.Username,
+			this.config.DefaultAuth.Password)))
+	return authHeader == validAuth
 }
 
 type Config struct {
-	DefaultCreds struct{
+	DefaultAuth struct {
 		Username string `yaml:"username"`
 		Password string `yaml:"password"`
 	} `yaml:"defaultCreds"`
@@ -84,7 +105,7 @@ type Config struct {
 
 func readConfigFile(log *logrus.Logger) *Config {
 	var config Config
-	if bytes, err := ioutil.ReadFile("/config.yml"); err != nil {
+	if bytes, err := ioutil.ReadFile("/auth.yml"); err != nil {
 		log.Warnf("Could Not Read Config File")
 		return &config
 	} else if err := yaml.Unmarshal(bytes, &config); err != nil {
