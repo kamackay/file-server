@@ -69,10 +69,19 @@ func (this *Server) Start() {
 							ctx.JSON(200, make([]string, 0))
 							return
 						}
-						paths := make([]string, 0)
+						paths := make([]*files.JSONFile, 0)
 						for _, f := range fs {
 							if !strings.HasSuffix(f.Name(), files.MetaSuffix) {
-								paths = append(paths, f.Name())
+								jsonData, err := files.GetJsonData(path.Join(filename, f.Name()))
+								if err != nil {
+									paths = append(paths, &files.JSONFile{
+										Name:        f.Name(),
+										ContentType: "text/plain",
+										LastUpdated: 0,
+									})
+								} else {
+									paths = append(paths, jsonData)
+								}
 							}
 						}
 						ctx.JSON(200, paths)
@@ -136,6 +145,7 @@ func (this *Server) uploadFile() gin.HandlerFunc {
 			if err == nil {
 				ctx.String(200, "Written Successfully")
 				_ = this.store.Delete(cache.CreateKey(ctx.Request.RequestURI))
+				_ = this.store.Delete(cache.CreateKey("/"))
 			} else {
 				this.log.Error("Error Writing File", err)
 				ctx.String(500, "Error Writing File")

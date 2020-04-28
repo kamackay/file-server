@@ -77,7 +77,7 @@ func (this *Authorizer) AllowedToViewFolder(ctx *gin.Context) bool {
 func (this *Authorizer) requiresValidation(ctx *gin.Context) bool {
 	switch strings.ToUpper(ctx.Request.Method) {
 	case "GET":
-		return true
+		return ctx.Request.RequestURI != "/favicon.ico"
 	case "PUT":
 	case "POST":
 	case "DELETE":

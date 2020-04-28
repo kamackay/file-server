@@ -52,6 +52,18 @@ func writeMetaFile(file File) error {
 	}
 }
 
+func GetJsonData(filename string) (*JSONFile, error) {
+	if file, err := ReadMetaFile(filename); err != nil {
+		return nil, err
+	} else {
+		return &JSONFile{
+			Name:        file.Name,
+			ContentType: file.ContentType,
+			LastUpdated: file.LastUpdated,
+		}, nil
+	}
+}
+
 func ReadMetaFile(filename string) (*File, error) {
 	if data, err := ioutil.ReadFile(filename + MetaSuffix); err != nil {
 		return nil, err
@@ -70,4 +82,10 @@ type File struct {
 	Data        string `yaml:"data"`
 	ContentType string `yaml:"contentType"`
 	LastUpdated int64  `yaml:"lastUpdated"`
+}
+
+type JSONFile struct {
+	Name        string `json:"name"`
+	ContentType string `json:"contentType"`
+	LastUpdated int64  `json:"lastUpdated"`
 }
