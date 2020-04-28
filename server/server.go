@@ -6,10 +6,12 @@ import (
 	"github.com/gin-contrib/cache/persistence"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/gzip"
+	"github.com/gin-contrib/logger"
 	"github.com/gin-gonic/gin"
 	"github.com/robfig/cron/v3"
 	"github.com/sirupsen/logrus"
 	"gitlab.com/kamackay/filer/auth"
+	"gitlab.com/kamackay/filer/files"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"os"
@@ -45,7 +47,7 @@ func (this *Server) Start() {
 	this.engine.Use(this.auth.Bind())
 	this.engine.Use(gzip.Gzip(gzip.BestCompression))
 	this.engine.Use(cors.Default())
-	//this.engine.Use(logger.SetLogger())
+	this.engine.Use(logger.SetLogger())
 
 	this.engine.PUT("/*root", this.uploadFile())
 	this.engine.POST("/*root", this.uploadFile())
@@ -61,7 +63,7 @@ func (this *Server) Start() {
 				}
 			} else {
 				if fi.IsDir() {
-					if files, err := ioutil.ReadDir(filename); err != nil {
+					if fs, err := ioutil.ReadDir(filename); err != nil {
 						ctx.String(500, "Could Not get Contents of Directory")
 					} else {
 						if !this.auth.AllowedToViewFolder(ctx) {
@@ -69,22 +71,17 @@ func (this *Server) Start() {
 							return
 						}
 						paths := make([]string, 0)
-						for _, f := range files {
+						for _, f := range fs {
 							paths = append(paths, f.Name())
 						}
 						fmt.Printf("Found %d paths", len(paths))
 						ctx.JSON(200, paths)
 					}
 				} else {
-					if data, err := ioutil.ReadFile(filename); err != nil {
+					if file, err := files.ReadFile(filename); err != nil {
 						this.unknownError(ctx)
 					} else {
-						var file File
-						if err := yaml.Unmarshal(data, &file); err != nil {
-							this.unknownError(ctx)
-						} else {
-							ctx.Data(200, file.ContentType, []byte(file.Data))
-						}
+						ctx.Data(200, file.ContentType, []byte(file.Data))
 					}
 				}
 			}
@@ -130,20 +127,17 @@ func (this *Server) uploadFile() gin.HandlerFunc {
 				// Try anyways
 				fmt.Println(err)
 			}
-			file, err := yaml.Marshal(File{
+			err = files.WriteFile(files.File{
 				Data:        string(data),
 				ContentType: ctx.ContentType(),
 				LastUpdated: time.Now().UnixNano(),
+				Name:        filename,
 			})
-			if err != nil {
-				fmt.Printf("Error Parsing into File Struct: %s", err)
-				ctx.String(500, "Error Writing File")
-				return
-			}
-			err = ioutil.WriteFile(filename, file, 0644)
 			if err == nil {
 				ctx.String(200, "Written Successfully")
+				_ = this.store.Delete(cache.CreateKey(ctx.Request.RequestURI))
 			} else {
+				this.log.Error("Error Writing File", err)
 				ctx.String(500, "Error Writing File")
 			}
 		}
@@ -163,10 +157,4 @@ func (this *Server) readConfig() *Server {
 }
 
 type Config struct {
-}
-
-type File struct {
-	Data        string `yaml:"data"`
-	ContentType string `yaml:"contentType"`
-	LastUpdated int64  `yaml:"lastUpdated"`
 }

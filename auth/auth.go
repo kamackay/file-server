@@ -11,7 +11,7 @@ import (
 
 type Authorizer struct {
 	log    *logrus.Logger
-	config *AuthConfig
+	config *Config
 }
 
 func New() *Authorizer {
@@ -68,15 +68,22 @@ func (this *Authorizer) requiresValidation(ctx *gin.Context) bool {
 
 func (this *Authorizer) validate(ctx *gin.Context) bool {
 	authHeader := ctx.GetHeader("Authorization")
-	return len(authHeader) > 0
+	return authHeader == this.getCredsEncoded()
 }
 
-type AuthConfig struct {
-	DefaultAuth string
+func (this *Authorizer) getCredsEncoded() string {
+
 }
 
-func readConfigFile(log *logrus.Logger) *AuthConfig {
-	var config AuthConfig
+type Config struct {
+	DefaultCreds struct{
+		Username string `yaml:"username"`
+		Password string `yaml:"password"`
+	} `yaml:"defaultCreds"`
+}
+
+func readConfigFile(log *logrus.Logger) *Config {
+	var config Config
 	if bytes, err := ioutil.ReadFile("/config.yml"); err != nil {
 		log.Warnf("Could Not Read Config File")
 		return &config
@@ -84,5 +91,7 @@ func readConfigFile(log *logrus.Logger) *AuthConfig {
 		log.Warnf("Could not Unmarshal Config Object")
 		return &config
 	}
+	log.Infof("Read Auth Config From Filesystem: %s",
+		config.DefaultAuth)
 	return &config
 }
