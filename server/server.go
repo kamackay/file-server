@@ -6,7 +6,6 @@ import (
 	"github.com/gin-contrib/cache/persistence"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/gzip"
-	"github.com/gin-contrib/logger"
 	"github.com/gin-gonic/gin"
 	"github.com/robfig/cron/v3"
 	"github.com/sirupsen/logrus"
@@ -16,6 +15,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"strings"
 	"time"
 )
 
@@ -47,7 +47,6 @@ func (this *Server) Start() {
 	this.engine.Use(this.auth.Bind())
 	this.engine.Use(gzip.Gzip(gzip.BestCompression))
 	this.engine.Use(cors.Default())
-	this.engine.Use(logger.SetLogger())
 
 	this.engine.PUT("/*root", this.uploadFile())
 	this.engine.POST("/*root", this.uploadFile())
@@ -72,7 +71,9 @@ func (this *Server) Start() {
 						}
 						paths := make([]string, 0)
 						for _, f := range fs {
-							paths = append(paths, f.Name())
+							if !strings.HasSuffix(f.Name(), files.MetaSuffix) {
+								paths = append(paths, f.Name())
+							}
 						}
 						ctx.JSON(200, paths)
 					}

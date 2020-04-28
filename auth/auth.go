@@ -82,18 +82,20 @@ func (this *Authorizer) requiresValidation(ctx *gin.Context) bool {
 	case "POST":
 	case "DELETE":
 		return true
-	default:
-		return false
 	}
+	return false
 }
 
 func (this *Authorizer) validate(ctx *gin.Context) bool {
 	authHeader := ctx.GetHeader("Authorization")
-	validAuth := "Basic " +
-		base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s",
-			this.config.DefaultAuth.Username,
-			this.config.DefaultAuth.Password)))
+	validAuth := "Basic " + this.getAuthHeader()
 	return authHeader == validAuth
+}
+
+func (this *Authorizer) getAuthHeader() string {
+	return base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s",
+		this.config.DefaultAuth.Username,
+		this.config.DefaultAuth.Password)))
 }
 
 type Config struct {
