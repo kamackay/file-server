@@ -43,7 +43,7 @@ func New(root string) *Server {
 }
 
 func (this *Server) Start() {
-	this.store = persistence.NewInMemoryStore(time.Second)
+	this.store = persistence.NewInMemoryStore(30 * time.Minute)
 	this.engine.Use(this.auth.Bind())
 	this.engine.Use(gzip.Gzip(gzip.BestCompression))
 	this.engine.Use(cors.Default())
