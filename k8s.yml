@@ -107,9 +107,23 @@ spec:
   tls:
     - hosts:
         - files.keithm.io
+        - files.keith.sh
+        - files.keithmackay.com
       secretName: files-cert
   rules:
     - host: files.keithm.io
+      http:
+        paths:
+          - backend:
+              serviceName: file-server
+              servicePort: 8080
+    - host: files.keith.sh
+      http:
+        paths:
+          - backend:
+              serviceName: file-server
+              servicePort: 8080
+    - host: files.keithmackay.com
       http:
         paths:
           - backend:
