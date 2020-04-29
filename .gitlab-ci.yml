@@ -10,6 +10,8 @@ docker-build-master:
   script:
     - docker build --pull -t "$CI_REGISTRY_IMAGE" .
     - docker push "$CI_REGISTRY_IMAGE"
+    - docker build --pull --file ./Dockerfile.ubuntu -t "$CI_REGISTRY_IMAGE"-ubuntu .
+    - docker push "$CI_REGISTRY_IMAGE"-ubuntu
   only:
     - master
 

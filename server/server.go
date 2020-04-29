@@ -19,6 +19,10 @@ import (
 	"time"
 )
 
+const (
+	CacheTime = 2 * time.Minute
+)
+
 type Server struct {
 	log        *logrus.Logger
 	engine     *gin.Engine
@@ -43,7 +47,7 @@ func New(root string) *Server {
 }
 
 func (this *Server) Start() {
-	this.store = persistence.NewInMemoryStore(30 * time.Minute)
+	this.store = persistence.NewInMemoryStore(CacheTime)
 	this.engine.Use(this.auth.Bind())
 	this.engine.Use(gzip.Gzip(gzip.BestCompression))
 	this.engine.Use(cors.Default())
@@ -51,7 +55,7 @@ func (this *Server) Start() {
 	this.engine.PUT("/*root", this.uploadFile())
 	this.engine.POST("/*root", this.postFile())
 
-	this.engine.GET("/*root", cache.CachePage(this.store, 5*time.Minute,
+	this.engine.GET("/*root", cache.CachePage(this.store, CacheTime,
 		func(ctx *gin.Context) {
 			filename := this.root + ctx.Request.URL.Path
 			if fi, exists, err := this.getFile(filename); err != nil {

@@ -22,7 +22,6 @@ func WriteFile(file File) error {
 	} else {
 		return nil
 	}
-
 }
 
 func ReadFile(filename string) (*File, error) {

@@ -1,0 +1,33 @@
+FROM ubuntu:latest as builder
+
+RUN apt-get update && apt-get upgrade -y
+
+WORKDIR /app/
+WORKDIR $GOPATH/src/gitlab.com/kamackay/filer
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get install -y \
+            git \
+            gcc \
+            make \
+            golang
+
+ADD ./go.mod ./
+
+RUN go mod download && \
+    go mod verify
+
+ADD ./ ./
+
+RUN go build -o application.file ./*.go && cp ./application.file /app/
+
+FROM ubuntu:latest
+
+WORKDIR /files
+
+RUN apt-get update && apt-get upgrade -y
+
+COPY --from=builder /app/application.file /server
+
+CMD ["/server"]
