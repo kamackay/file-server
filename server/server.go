@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	CacheTime = 2 * time.Minute
+	CacheTime = 5 * time.Minute
 )
 
 type Server struct {
