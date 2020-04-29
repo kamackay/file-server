@@ -1,11 +1,11 @@
-FROM fedora:latest as builder
+FROM registry.access.redhat.com/ubi8:latest as builder
 
-RUN dnf update -y
+RUN yum update -y
 
 WORKDIR /app/
 WORKDIR $GOPATH/src/gitlab.com/kamackay/filer
 
-RUN dnf install -y golang
+RUN yum install -y golang
 
 ADD ./go.mod ./
 
@@ -16,7 +16,7 @@ ADD ./ ./
 
 RUN go build -o application.file ./*.go && cp ./application.file /app/
 
-FROM fedora:latest
+FROM registry.access.redhat.com/ubi8-minimal:latest
 
 WORKDIR /files
 
