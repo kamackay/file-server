@@ -13,6 +13,7 @@ import (
 	"gitlab.com/kamackay/filer/files"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"path"
 	"strings"
@@ -62,7 +63,7 @@ func (this *Server) Start() {
 				if exists {
 					this.unknownError(ctx)
 				} else {
-					ctx.String(404, "File Not Found")
+					ctx.String(404, "MetaData Not Found")
 				}
 			} else {
 				if fi.IsDir() {
@@ -91,11 +92,7 @@ func (this *Server) Start() {
 						ctx.JSON(200, paths)
 					}
 				} else {
-					if file, err := files.ReadFile(filename); err != nil {
-						this.unknownError(ctx)
-					} else {
-						ctx.Data(200, file.ContentType, []byte(file.Data))
-					}
+					this.sendFile(ctx, filename)
 				}
 			}
 		}))
@@ -104,18 +101,18 @@ func (this *Server) Start() {
 		file := this.root + ctx.Request.URL.Path
 		if fi, exists, err := this.getFile(file); err != nil {
 			if exists {
-				ctx.String(404, "File Not Found")
+				ctx.String(http.StatusNotFound, "MetaData Not Found")
 			} else {
 				this.unknownError(ctx)
 			}
 		} else {
 			if fi.IsDir() {
-				ctx.String(400, "Cannot Delete Folder")
+				ctx.String(http.StatusBadRequest, "Cannot Delete Folder")
 			} else {
 				if err := os.Remove(file); err != nil {
-					ctx.String(500, "Could Not Delete File")
+					ctx.String(500, "Could Not Delete MetaData")
 				} else {
-					ctx.String(200, "Successfully Deleted File")
+					ctx.String(http.StatusOK, "Successfully Deleted MetaData")
 				}
 			}
 		}
@@ -128,6 +125,42 @@ func (this *Server) Start() {
 	}
 }
 
+func (this *Server) sendFile(ctx *gin.Context, filename string) {
+	if file, reader, err := files.GetFile(filename); err != nil {
+		this.unknownError(ctx)
+	} else {
+		defer reader.Close()
+		fileSize := determineFileSize(file, reader)
+
+		if fileSize < files.BufferLimit {
+			data, err := ioutil.ReadFile(file.Name)
+			if err == nil {
+				ctx.Data(200, file.ContentType, data)
+				return
+			}
+		}
+		ctx.DataFromReader(http.StatusOK,
+			fileSize,
+			file.ContentType,
+			reader,
+			map[string]string{})
+
+	}
+}
+
+func determineFileSize(meta *files.MetaData, file *os.File) int64 {
+	if meta.Size > 0 {
+		return meta.Size
+	} else {
+		stat, err := file.Stat()
+		if err != nil {
+			return 0
+		} else {
+			return stat.Size()
+		}
+	}
+}
+
 // Use POST method to request server to download files from other location
 func (this *Server) postFile() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
@@ -135,16 +168,11 @@ func (this *Server) postFile() gin.HandlerFunc {
 		case "text/plain":
 			if data, err := ctx.GetRawData(); err != nil {
 				ctx.String(500, "Unable to read URL")
-			} else if file, err := files.DownloadFile(string(data)); err != nil {
-				this.log.Error("Error Pulling File", err)
-				ctx.String(500, "Unable to download File")
+			} else if err := files.DownloadFile(string(data), this.root+ctx.Request.URL.Path); err != nil {
+				this.log.Error("Error Pulling MetaData", err)
+				ctx.String(500, "Unable to download MetaData")
 			} else {
-				file.Name = this.root + ctx.Request.URL.Path
-				if err := files.WriteFile(*file); err != nil {
-					ctx.String(500, "Unable to write File")
-				} else {
-					this.success(ctx)
-				}
+				this.success(ctx)
 			}
 			return
 		default:
@@ -164,25 +192,24 @@ func (this *Server) uploadFile() gin.HandlerFunc {
 		filename := this.root + ctx.Request.URL.Path
 
 		if data, err := ctx.GetRawData(); err != nil {
-			ctx.String(400, "Could Not Read File")
+			ctx.String(400, "Could Not Read MetaData")
 		} else {
 			dir := path.Dir(filename)
 			if err := os.MkdirAll(dir, 0644); err != nil {
 				// Try anyways
 				fmt.Println(err)
 			}
-			err = files.WriteFile(files.File{
-				Data:        string(data),
+			err = files.WriteFile(files.MetaData{
 				ContentType: ctx.ContentType(),
 				LastUpdated: time.Now().UnixNano(),
 				Name:        filename,
 				Protected:   false,
-			})
+			}, data)
 			if err == nil {
 				this.success(ctx)
 			} else {
-				this.log.Error("Error Writing File", err)
-				ctx.String(500, "Error Writing File")
+				this.log.Error("Error Writing MetaData", err)
+				ctx.String(500, "Error Writing MetaData")
 			}
 		}
 	}
@@ -191,7 +218,7 @@ func (this *Server) uploadFile() gin.HandlerFunc {
 func (this *Server) readConfig() *Server {
 	var config Config
 	if bytes, err := ioutil.ReadFile("/config.yml"); err != nil {
-		this.log.Warnf("Could Not Read Config File")
+		this.log.Warnf("Could Not Read Config MetaData")
 		return this
 	} else if err := yaml.Unmarshal(bytes, &config); err != nil {
 		this.log.Warnf("Could not Unmarshal Config Object")

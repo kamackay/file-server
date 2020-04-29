@@ -114,7 +114,7 @@ type Config struct {
 func readConfigFile(log *logrus.Logger) *Config {
 	var config Config
 	if bytes, err := ioutil.ReadFile("/auth.yml"); err != nil {
-		log.Warnf("Could Not Read Config File")
+		log.Warnf("Could Not Read Config MetaData")
 		return &config
 	} else if err := yaml.Unmarshal(bytes, &config); err != nil {
 		log.Warnf("Could not Unmarshal Config Object")

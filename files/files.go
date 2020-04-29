@@ -1,10 +1,12 @@
 package files
 
 import (
+	"bufio"
 	"errors"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 )
@@ -12,41 +14,47 @@ import (
 const (
 	MetaSuffix         = ".meta"
 	DefaultPermissions = 0644
+	BufferLimit = 60 * 1024 * 1024
 )
 
-func WriteFile(file File) error {
-	if err := writeMetaFile(file); err != nil {
-		return err
-	} else if err := ioutil.WriteFile(file.Name, []byte(file.Data), DefaultPermissions); err != nil {
+func WriteFile(file MetaData, content []byte) error {
+	if err := ioutil.WriteFile(file.Name, content, DefaultPermissions);
+		err != nil {
 		return err
 	} else {
-		return nil
+		file.Size = getSize(file.Name)
+		if err := writeMetaFile(file);
+			err != nil {
+			return err
+		} else {
+			return nil
+		}
 	}
 }
 
-func ReadFile(filename string) (*File, error) {
+func GetFile(filename string) (*MetaData, *os.File, error) {
 	if strings.HasSuffix(filename, MetaSuffix) {
-		return nil, errors.New("attempt to read meta file")
+		return nil, nil, errors.New("attempt to read meta file")
 	}
-	if data, err := ioutil.ReadFile(filename); err != nil {
-		return nil, err
-	} else if file, err := ReadMetaFile(filename); err != nil {
-		return nil, err
+	if file, err := ReadMetaFile(filename); err != nil {
+		return nil, nil, err
+	} else if reader, err := os.Open(filename); err != nil {
+		return nil, nil, err
 	} else {
-		file.Data = string(data)
-		return file, nil
+		return file, reader, nil
 	}
 }
 
-func writeMetaFile(file File) error {
-	if data, err := yaml.Marshal(File{
+func writeMetaFile(file MetaData) error {
+	if data, err := yaml.Marshal(MetaData{
 		Name:        file.Name,
-		Data:        "",
 		ContentType: file.ContentType,
 		LastUpdated: file.LastUpdated,
+		Size:        file.Size,
 	}); err != nil {
 		return err
-	} else if err := ioutil.WriteFile(file.Name+MetaSuffix, data, DefaultPermissions); err != nil {
+	} else if err := ioutil.WriteFile(file.Name+MetaSuffix, data, DefaultPermissions);
+		err != nil {
 		return err
 	} else {
 		return nil
@@ -54,7 +62,8 @@ func writeMetaFile(file File) error {
 }
 
 func GetJsonData(filename string) (*JSONFile, error) {
-	if file, err := ReadMetaFile(filename); err != nil {
+	if file, err := ReadMetaFile(filename);
+		err != nil {
 		return nil, err
 	} else {
 		return &JSONFile{
@@ -65,12 +74,14 @@ func GetJsonData(filename string) (*JSONFile, error) {
 	}
 }
 
-func ReadMetaFile(filename string) (*File, error) {
-	if data, err := ioutil.ReadFile(filename + MetaSuffix); err != nil {
+func ReadMetaFile(filename string) (*MetaData, error) {
+	if data, err := ioutil.ReadFile(filename + MetaSuffix);
+		err != nil {
 		return nil, err
 	} else {
-		var file File
-		if err := yaml.Unmarshal(data, &file); err != nil {
+		var file MetaData
+		if err := yaml.Unmarshal(data, &file);
+			err != nil {
 			return nil, err
 		} else {
 			return &file, nil
@@ -78,31 +89,44 @@ func ReadMetaFile(filename string) (*File, error) {
 	}
 }
 
-func DownloadFile(url string) (*File, error) {
+func DownloadFile(url string, filename string) error {
 	if resp, err := http.Get(url); err != nil {
-		return nil, err
+		return err
 	} else {
 		defer resp.Body.Close()
-		if body, err := ioutil.ReadAll(resp.Body); err != nil {
-			return nil, err
+		file, err := os.Create(filename)
+		if err != nil {
+			return err
+		}
+		_, err = bufio.NewWriter(file).ReadFrom(resp.Body)
+		if err != nil {
+			return err
 		} else {
-			return &File{
-				Name:        url,
-				Data:        string(body),
+			return writeMetaFile(MetaData{
+				Name:        filename,
 				ContentType: resp.Header.Get("Content-Type"),
 				LastUpdated: time.Now().UnixNano(),
 				Protected:   false,
-			}, nil
+				Size:        getSize(filename),
+			})
 		}
 	}
 }
 
-type File struct {
+func getSize(filename string) int64 {
+	if stat, err := os.Stat(filename); err != nil {
+		return 0
+	} else {
+		return stat.Size()
+	}
+}
+
+type MetaData struct {
 	Name        string `yaml:"name"`
-	Data        string `yaml:"data"`
 	ContentType string `yaml:"contentType"`
 	LastUpdated int64  `yaml:"lastUpdated"`
 	Protected   bool   `yaml:"protected"`
+	Size        int64  `yaml:"size"`
 }
 
 type JSONFile struct {
