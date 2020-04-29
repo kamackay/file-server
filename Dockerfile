@@ -1,14 +1,11 @@
-FROM golang:alpine as builder
+FROM fedora:latest as builder
+
+RUN dnf update -y
 
 WORKDIR /app/
-WORKDIR $GOPATH/src/github.com/kamackay/filer
+WORKDIR $GOPATH/src/gitlab.com/kamackay/filer
 
-RUN apk upgrade --update --no-cache && \
-        apk add --no-cache \
-            git \
-            gcc \
-            curl \
-            linux-headers
+RUN dnf install -y golang
 
 ADD ./go.mod ./
 
@@ -19,9 +16,9 @@ ADD ./ ./
 
 RUN go build -o application.file ./*.go && cp ./application.file /app/
 
-FROM alpine:latest
+FROM fedora:latest
 
-RUN apk upgrade --update --no-cache
+WORKDIR /files
 
 COPY --from=builder /app/application.file /server
 
