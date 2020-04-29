@@ -67,6 +67,8 @@ spec:
               value: "8080"
             - name: GIN_MODE
               value: "release"
+            - name: BUFFER_LIMIT
+              value: "10000000"
           volumeMounts:
             - name: file-system
               mountPath: /files

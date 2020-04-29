@@ -63,7 +63,7 @@ func (this *Server) Start() {
 				if exists {
 					this.unknownError(ctx)
 				} else {
-					ctx.String(404, "MetaData Not Found")
+					ctx.String(http.StatusNotFound, "File Not Found")
 				}
 			} else {
 				if fi.IsDir() {
@@ -101,7 +101,7 @@ func (this *Server) Start() {
 		file := this.root + ctx.Request.URL.Path
 		if fi, exists, err := this.getFile(file); err != nil {
 			if exists {
-				ctx.String(http.StatusNotFound, "MetaData Not Found")
+				ctx.String(http.StatusNotFound, "File Not Found")
 			} else {
 				this.unknownError(ctx)
 			}
@@ -110,15 +110,16 @@ func (this *Server) Start() {
 				ctx.String(http.StatusBadRequest, "Cannot Delete Folder")
 			} else {
 				if err := os.Remove(file); err != nil {
-					ctx.String(500, "Could Not Delete MetaData")
+					ctx.String(500, "Could Not Delete File")
 				} else {
-					ctx.String(http.StatusOK, "Successfully Deleted MetaData")
+					ctx.String(http.StatusOK, "Successfully Deleted File")
 				}
 			}
 		}
 	})
 
-	if err := this.engine.Run(); err != nil {
+	if err := this.engine.Run(fmt.Sprintf(":%s", os.Getenv("PORT")));
+		err != nil {
 		panic(err)
 	} else {
 		this.log.Info("Successfully Started Server")
@@ -132,19 +133,24 @@ func (this *Server) sendFile(ctx *gin.Context, filename string) {
 		defer reader.Close()
 		fileSize := determineFileSize(file, reader)
 
-		if fileSize < files.BufferLimit {
+		if fileSize < files.GetBufferLimit() {
 			data, err := ioutil.ReadFile(file.Name)
 			if err == nil {
 				ctx.Data(200, file.ContentType, data)
 				return
 			}
 		}
+
 		ctx.DataFromReader(http.StatusOK,
 			fileSize,
 			file.ContentType,
 			reader,
 			map[string]string{})
 
+		// It seems that the Gin Cache is unable to handle this, and causes errors
+		defer func() {
+			_ = this.store.Delete(cache.CreateKey(ctx.Request.RequestURI))
+		}()
 	}
 }
 

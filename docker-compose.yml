@@ -6,3 +6,5 @@ services:
       context: .
     ports:
       - "2121:8080"
+    environment:
+      - "PORT=8080"

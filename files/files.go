@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -14,8 +15,17 @@ import (
 const (
 	MetaSuffix         = ".meta"
 	DefaultPermissions = 0644
-	BufferLimit = 60 * 1024 * 1024
 )
+
+func GetBufferLimit() int64 {
+	s := os.Getenv("BUFFER_LIMIT")
+	n, err := strconv.ParseInt(s, 0, 64)
+	if err != nil {
+		return 50
+	} else {
+		return n
+	}
+}
 
 func WriteFile(file MetaData, content []byte) error {
 	if err := ioutil.WriteFile(file.Name, content, DefaultPermissions);
