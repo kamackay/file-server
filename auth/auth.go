@@ -55,13 +55,16 @@ func (this *Authorizer) Validate(ctx *gin.Context) bool {
 	this.log.Infof("Validating Request on `%s`", ctx.Request.URL.Path)
 
 	if this.requiresValidation(ctx) {
+		this.log.Infof("Request Requires Validation")
 		if this.validate(ctx) {
 			return true
 		} else {
 			this.Decline(ctx)
+			this.log.Warnf("Declining Request")
 			return false
 		}
 	} else {
+		this.log.Infof("Request Does Not Requires Validation")
 		return true
 	}
 }
@@ -84,9 +87,7 @@ func (this *Authorizer) requiresValidation(ctx *gin.Context) bool {
 		} else {
 			return meta.Protected
 		}
-	case "PUT":
-	case "POST":
-	case "DELETE":
+	case "PUT", "POST", "DELETE":
 		return true
 	}
 	return false
@@ -95,6 +96,7 @@ func (this *Authorizer) requiresValidation(ctx *gin.Context) bool {
 func (this *Authorizer) validate(ctx *gin.Context) bool {
 	authHeader := ctx.GetHeader("Authorization")
 	validAuth := "Basic " + this.getAuthHeader()
+	this.log.Debugf("Comparing %s to %s", authHeader, validAuth)
 	return authHeader == validAuth
 }
 
