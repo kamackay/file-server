@@ -105,7 +105,7 @@ func (this *Authorizer) validateReadOnly(header string) bool {
 	this.log.Infof("Validating Read-Only access")
 	for _, auth := range this.config.ReadOnlyAuth {
 		validAuth := encodeAuth(auth)
-		this.log.Infof("Comparing %s to %s", header, validAuth)
+		this.log.Debugf("Comparing %s to %s", header, validAuth)
 		if validAuth == header {
 			return true
 		}
