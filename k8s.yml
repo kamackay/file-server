@@ -22,17 +22,6 @@ data:
   config.yml: |
 
 ---
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: filer-secret
-  namespace: file-server
-data:
-  auth.yml: |
-    defaultCreds:
-      username: keith
-      password: super-ultra-secret
----
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -68,7 +57,7 @@ spec:
             - name: GIN_MODE
               value: "release"
             - name: BUFFER_LIMIT
-              value: "50000000"
+              value: "5"
           volumeMounts:
             - name: file-system
               mountPath: /files
@@ -83,8 +72,8 @@ spec:
           configMap:
             name: filer-config
         - name: auth
-          configMap:
-            name: filer-secret
+          secret:
+            secretName: filer-secret
   volumeClaimTemplates:
     - spec:
         accessModes:

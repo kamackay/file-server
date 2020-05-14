@@ -56,7 +56,7 @@ func (this *Authorizer) Validate(ctx *gin.Context) bool {
 
 	if this.requiresValidation(ctx) {
 		this.log.Infof("Request Requires Validation")
-		if this.validate(ctx) {
+		if this.validate(ctx, strings.ToUpper(ctx.Request.Method) == http.MethodGet) {
 			return true
 		} else {
 			this.Decline(ctx)
@@ -93,24 +93,44 @@ func (this *Authorizer) requiresValidation(ctx *gin.Context) bool {
 	return false
 }
 
-func (this *Authorizer) validate(ctx *gin.Context) bool {
+func (this *Authorizer) validate(ctx *gin.Context, allowReadOnly bool) bool {
 	authHeader := ctx.GetHeader("Authorization")
-	validAuth := "Basic " + this.getAuthHeader()
+	validAuth := this.getAuthHeader()
 	this.log.Debugf("Comparing %s to %s", authHeader, validAuth)
-	return authHeader == validAuth
+	return authHeader == validAuth ||
+		(allowReadOnly && this.validateReadOnly(authHeader))
+}
+
+func (this *Authorizer) validateReadOnly(header string) bool {
+	this.log.Infof("Validating Read-Only access")
+	for _, auth := range this.config.ReadOnlyAuth {
+		validAuth := encodeAuth(auth)
+		this.log.Infof("Comparing %s to %s", header, validAuth)
+		if validAuth == header {
+			return true
+		}
+	}
+	return false
 }
 
 func (this *Authorizer) getAuthHeader() string {
-	return base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s",
-		this.config.DefaultAuth.Username,
-		this.config.DefaultAuth.Password)))
+	return encodeAuth(this.config.DefaultAuth)
+}
+
+func encodeAuth(auth Auth) string {
+	return "Basic " + base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s",
+		auth.Username,
+		auth.Password)))
 }
 
 type Config struct {
-	DefaultAuth struct {
-		Username string `yaml:"username"`
-		Password string `yaml:"password"`
-	} `yaml:"defaultCreds"`
+	DefaultAuth  Auth   `yaml:"defaultCreds"`
+	ReadOnlyAuth []Auth `yaml:"readOnlyCreds"`
+}
+
+type Auth struct {
+	Username string `yaml:"username"`
+	Password string `yaml:"password"`
 }
 
 func readConfigFile(log *logrus.Logger) *Config {
@@ -123,6 +143,6 @@ func readConfigFile(log *logrus.Logger) *Config {
 		return &config
 	}
 	log.Infof("Read Auth Config From Filesystem: %s",
-		config.DefaultAuth)
+		config)
 	return &config
 }

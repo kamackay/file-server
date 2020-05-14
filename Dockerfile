@@ -16,7 +16,7 @@ ADD ./ ./
 
 RUN go build -o application.file ./*.go && cp ./application.file /app/
 
-FROM registry.access.redhat.com/ubi8-minimal:latest
+FROM registry.access.redhat.com/ubi8:latest
 
 WORKDIR /files
 
