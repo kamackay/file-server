@@ -80,25 +80,31 @@ func (this *Authorizer) AllowedToViewFolder(ctx *gin.Context) bool {
 
 func (this *Authorizer) requiresValidation(ctx *gin.Context) bool {
 	switch strings.ToUpper(ctx.Request.Method) {
-	case "GET":
+	case http.MethodGet:
 		meta, err := files.ReadMetaFile(this.fsRoot + ctx.Request.URL.Path)
 		if err != nil {
 			return true
 		} else {
 			return meta.Protected
 		}
-	case "PUT", "POST", "DELETE":
+	case http.MethodPut, http.MethodPost, http.MethodDelete:
+		return true
+	default:
 		return true
 	}
-	return false
 }
 
 func (this *Authorizer) validate(ctx *gin.Context, allowReadOnly bool) bool {
 	authHeader := ctx.GetHeader("Authorization")
 	validAuth := this.getAuthHeader()
 	this.log.Debugf("Comparing %s to %s", authHeader, validAuth)
-	return authHeader == validAuth ||
-		(allowReadOnly && this.validateReadOnly(authHeader))
+	if authHeader == validAuth {
+		this.log.Infof("Successful auth from Admin user")
+		return true
+	} else {
+		return allowReadOnly && this.validateReadOnly(authHeader)
+	}
+
 }
 
 func (this *Authorizer) validateReadOnly(header string) bool {
@@ -107,6 +113,7 @@ func (this *Authorizer) validateReadOnly(header string) bool {
 		validAuth := encodeAuth(auth)
 		this.log.Debugf("Comparing %s to %s", header, validAuth)
 		if validAuth == header {
+			this.log.Infof("Successful Auth from User %s", auth.Username)
 			return true
 		}
 	}

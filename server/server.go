@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	CacheTime = 5 * time.Minute
+	CacheTime = 1 * time.Millisecond
 )
 
 type Server struct {
@@ -31,6 +31,7 @@ type Server struct {
 	store      *persistence.InMemoryStore
 	cronRunner *cron.Cron
 	auth       *auth.Authorizer
+	config     Config
 }
 
 func New(root string) *Server {
@@ -38,13 +39,13 @@ func New(root string) *Server {
 	log.SetFormatter(&logrus.TextFormatter{
 		FullTimestamp: true,
 	})
-	return &Server{
+	return (&Server{
 		log:        log,
 		engine:     gin.Default(),
 		root:       root,
 		cronRunner: cron.New(),
 		auth:       auth.New(root),
-	}
+	}).readConfig()
 }
 
 func (this *Server) Start() {
@@ -118,8 +119,7 @@ func (this *Server) Start() {
 		}
 	})
 
-	if err := this.engine.Run(fmt.Sprintf(":%s", os.Getenv("PORT")));
-		err != nil {
+	if err := this.engine.Run(fmt.Sprintf(":%s", os.Getenv("PORT"))); err != nil {
 		panic(err)
 	} else {
 		this.log.Info("Successfully Started Server")
@@ -230,8 +230,11 @@ func (this *Server) readConfig() *Server {
 		this.log.Warnf("Could not Unmarshal Config Object")
 		return this
 	}
+	this.log.Infof("Successfully Read Config File: %s", config)
+	this.config = config
 	return this
 }
 
 type Config struct {
+	CacheServers []string `yaml:"cacheServers"`
 }

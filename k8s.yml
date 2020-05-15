@@ -20,7 +20,8 @@ metadata:
   namespace: file-server
 data:
   config.yml: |
-
+    cacheServers:
+      - "filer-cache:8080"
 ---
 apiVersion: apps/v1
 kind: StatefulSet
