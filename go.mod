@@ -1,6 +1,6 @@
 module gitlab.com/kamackay/filer
 
-go 1.14
+go 1.13
 
 require (
 	github.com/gin-contrib/cache v1.1.0

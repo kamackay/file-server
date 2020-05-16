@@ -12,10 +12,14 @@ import (
 	"gitlab.com/kamackay/filer/auth"
 	"gitlab.com/kamackay/filer/files"
 	"gopkg.in/yaml.v2"
+	"io"
 	"io/ioutil"
+	"mime"
 	"net/http"
 	"os"
 	"path"
+	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -60,9 +64,17 @@ func (this *Server) Start() {
 	this.engine.GET("/*root", cache.CachePage(this.store, CacheTime,
 		func(ctx *gin.Context) {
 			filename := this.root + ctx.Request.URL.Path
-			if fi, exists, err := this.getFile(filename); err != nil {
+			urlPath := ctx.Request.URL.Path
+			if regexp.MustCompile("^/ui/?.*").MatchString(urlPath) {
+				if urlPath == "/ui" || urlPath == "/ui/" {
+					// Send Root UI file
+					this.sendFileNoMeta(ctx, "/ui/index.html", "text/html")
+				} else {
+					this.sendFileNoMeta(ctx, urlPath, "text/javascript")
+				}
+			} else if fi, exists, err := this.getFile(filename); err != nil {
 				if exists {
-					this.unknownError(ctx)
+					this.unknownError(ctx, err)
 				} else {
 					ctx.String(http.StatusNotFound, "File Not Found")
 				}
@@ -104,7 +116,7 @@ func (this *Server) Start() {
 			if exists {
 				ctx.String(http.StatusNotFound, "File Not Found")
 			} else {
-				this.unknownError(ctx)
+				this.unknownError(ctx, err)
 			}
 		} else {
 			if fi.IsDir() {
@@ -128,17 +140,14 @@ func (this *Server) Start() {
 
 func (this *Server) sendFile(ctx *gin.Context, filename string) {
 	if file, reader, err := files.GetFile(filename); err != nil {
-		this.unknownError(ctx)
+		this.unknownError(ctx, err)
 	} else {
 		defer reader.Close()
 		fileSize := determineFileSize(file, reader)
 
 		if fileSize < files.GetBufferLimit() {
-			data, err := ioutil.ReadFile(file.Name)
-			if err == nil {
-				ctx.Data(200, file.ContentType, data)
-				return
-			}
+			this.sendFileNoMeta(ctx, filename, file.ContentType)
+			return
 		}
 
 		ctx.DataFromReader(http.StatusOK,
@@ -151,6 +160,13 @@ func (this *Server) sendFile(ctx *gin.Context, filename string) {
 		defer func() {
 			_ = this.store.Delete(cache.CreateKey(ctx.Request.RequestURI))
 		}()
+	}
+}
+
+func (this *Server) sendFileNoMeta(ctx *gin.Context, filename string, contentType string) {
+	data, err := ioutil.ReadFile(filename)
+	if err == nil {
+		ctx.Data(200, contentType, data)
 	}
 }
 
@@ -197,6 +213,43 @@ func (this *Server) uploadFile() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		filename := this.root + ctx.Request.URL.Path
 
+		if strings.Contains(ctx.ContentType(), "multipart/form-data") {
+			multi, err := ctx.Request.MultipartReader()
+			if err != nil {
+				this.unknownError(ctx, err)
+				return
+			}
+			for {
+				mimePart, err := multi.NextPart()
+				if err == io.EOF {
+					break
+				}
+				if err != nil {
+					this.log.Warnf("Error reading multipart section: %v", err)
+					this.unknownError(ctx, err)
+					break
+				}
+				data, err := ioutil.ReadAll(mimePart)
+				if err != nil {
+					this.unknownError(ctx, err)
+					this.log.Warnf("Unable to Read Error: %v", err)
+					break
+				}
+				err = files.WriteFile(files.MetaData{
+					ContentType: mime.TypeByExtension(filepath.Ext(mimePart.FileName())),
+					LastUpdated: time.Now().UnixNano(),
+					Name:        filename,
+					Protected:   false,
+				}, data)
+				if err == nil {
+					this.success(ctx)
+				} else {
+					this.log.Error("Error Writing MetaData", err)
+					ctx.String(500, "Error Writing MetaData")
+				}
+			}
+			return
+		}
 		if data, err := ctx.GetRawData(); err != nil {
 			ctx.String(400, "Could Not Read MetaData")
 		} else {

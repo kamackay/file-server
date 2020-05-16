@@ -1,2 +1,3 @@
 .git/
 Dockerfile
+ui/node_modules

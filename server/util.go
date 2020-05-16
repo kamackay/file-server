@@ -9,8 +9,9 @@ func (this *Server) error(ctx *gin.Context, message string) {
 	ctx.String(500, message)
 }
 
-func (this *Server) unknownError(ctx *gin.Context) {
+func (this *Server) unknownError(ctx *gin.Context, err error) {
 	this.error(ctx, "Unknown Error")
+	this.log.Errorf("Unknown Error", err)
 }
 
 func (this *Server) getFile(path string) (os.FileInfo, bool, error) {

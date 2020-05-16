@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -79,8 +80,13 @@ func (this *Authorizer) AllowedToViewFolder(ctx *gin.Context) bool {
 }
 
 func (this *Authorizer) requiresValidation(ctx *gin.Context) bool {
+	path := ctx.Request.URL.Path
 	switch strings.ToUpper(ctx.Request.Method) {
 	case http.MethodGet:
+		if regexp.MustCompile("^/ui/?.*").MatchString(path) {
+			// UI Paths should always return
+			return false
+		}
 		meta, err := files.ReadMetaFile(this.fsRoot + ctx.Request.URL.Path)
 		if err != nil {
 			return true
