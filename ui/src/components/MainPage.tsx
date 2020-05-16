@@ -1,6 +1,7 @@
 import React from "react";
 import { Form, Input, Button, Upload, Row, Col } from "antd";
 import Cookies from "js-cookie";
+import { toast } from "react-toastify";
 import { UploadOutlined } from "@ant-design/icons";
 import { withRouter, RouteComponentProps } from "react-router-dom";
 
@@ -113,19 +114,24 @@ export default withRouter(
               <Col span={6} />
             </Row>
 
-            <Upload
+            <Upload.Dragger
               method="PUT"
               action={this.state.url}
+              onChange={(state) => {
+                if (state.file.status === "done") {
+                  toast(`Uploaded Successfully!`, { type: "success" });
+                }
+              }}
               headers={{
                 Authorization: `Basic ${btoa(
                   `${this.state.creds?.username}:${this.state.creds?.password}`
                 )}`,
               }}
             >
-              <Button>
-                <UploadOutlined /> Click to Upload
-              </Button>
-            </Upload>
+              <p className="ant-upload-drag-icon">
+                <UploadOutlined /> Click or Drag To Upload
+              </p>
+            </Upload.Dragger>
           </Form>
         </div>
       );
