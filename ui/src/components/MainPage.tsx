@@ -1,5 +1,5 @@
 import React from "react";
-import { Form, Input, Button, Upload } from "antd";
+import { Form, Input, Button, Upload, Row, Col } from "antd";
 import Cookies from "js-cookie";
 import { UploadOutlined } from "@ant-design/icons";
 import { withRouter, RouteComponentProps } from "react-router-dom";
@@ -33,7 +33,6 @@ export default withRouter(
           <h3>Use this page to upload files to the Static File Server</h3>
 
           <Form
-            wrapperCol={{ span: 16 }}
             onFinish={(values: Creds) => {
               Cookies.set(`creds`, values);
               this.setState((prev) => ({ ...prev, creds: values }));
@@ -41,25 +40,41 @@ export default withRouter(
             initialValues={this.state.creds}
             style={{ textAlign: "center" }}
           >
-            <Form.Item
-              label="Username"
-              name="username"
-              rules={[
-                { required: true, message: "Please input your username!" },
-              ]}
-            >
-              <Input />
-            </Form.Item>
+            <Row gutter={24}>
+              <Col
+                span={12}
+                children={
+                  <Form.Item
+                    label="Username"
+                    name="username"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Please input your username!",
+                      },
+                    ]}
+                    children={<Input />}
+                  />
+                }
+              />
 
-            <Form.Item
-              label="Password"
-              name="password"
-              rules={[
-                { required: true, message: "Please input your password!" },
-              ]}
-            >
-              <Input.Password />
-            </Form.Item>
+              <Col
+                span={12}
+                children={
+                  <Form.Item
+                    label="Password"
+                    name="password"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Please input your password!",
+                      },
+                    ]}
+                    children={<Input.Password />}
+                  />
+                }
+              />
+            </Row>
 
             <Form.Item>
               <Button type="primary" htmlType="submit">
@@ -68,24 +83,35 @@ export default withRouter(
             </Form.Item>
           </Form>
 
-          <Form wrapperCol={{ span: 16, style: { textAlign: "center" } }}>
+          <Form>
             <h3>Upload a File</h3>
 
-            <Form.Item
-              label="Path"
-              name="path"
-              initialValue={this.state.url}
-              rules={[{ required: true, message: "Please input A Path!" }]}
-            >
-              <Input
-                value={this.state.url}
-                onChange={(e) => {
-                  const url = e.target.value;
-                  console.log(url);
-                  this.setState((prev) => ({ ...prev, url }));
-                }}
+            <Row gutter={24}>
+              <Col span={6} />
+              <Col
+                span={12}
+                children={
+                  <Form.Item
+                    label="Path"
+                    name="path"
+                    initialValue={this.state.url}
+                    rules={[
+                      { required: true, message: "Please input A Path!" },
+                    ]}
+                  >
+                    <Input
+                      value={this.state.url}
+                      onChange={(e) => {
+                        const url = e.target.value;
+                        console.log(url);
+                        this.setState((prev) => ({ ...prev, url }));
+                      }}
+                    />
+                  </Form.Item>
+                }
               />
-            </Form.Item>
+              <Col span={6} />
+            </Row>
 
             <Upload
               method="PUT"
