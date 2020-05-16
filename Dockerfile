@@ -22,7 +22,7 @@ WORKDIR /app
 
 COPY ./ui/package.json ./
 
-RUN yarn --verbose
+RUN yarn
 
 COPY ./ui/ ./
 
