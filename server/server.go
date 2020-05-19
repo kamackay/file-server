@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	CacheTime = 1 * time.Millisecond
+	CacheTime = 1 * time.Second
 )
 
 type Server struct {
@@ -42,6 +42,7 @@ func New(root string) *Server {
 	log := logrus.New()
 	log.SetFormatter(&logrus.TextFormatter{
 		FullTimestamp: true,
+		ForceColors:   true,
 	})
 	return (&Server{
 		log:        log,
@@ -65,21 +66,19 @@ func (this *Server) Start() {
 		func(ctx *gin.Context) {
 			filename := this.root + ctx.Request.URL.Path
 			urlPath := ctx.Request.URL.Path
-			if regexp.MustCompile("^/ui/?.*").MatchString(urlPath) {
+			if urlPath == "/" {
+				ctx.Redirect(http.StatusTemporaryRedirect, "/ui/")
+			} else if regexp.MustCompile("^/ui/?.*").MatchString(urlPath) {
 				if urlPath == "/ui" || urlPath == "/ui/" {
 					// Send Root UI file
 					this.sendFileNoMeta(ctx, "/ui/index.html", "text/html")
 				} else {
 					this.sendFileNoMeta(ctx, urlPath, "text/javascript")
 				}
-			} else if fi, exists, err := this.getFile(filename); err != nil {
-				if exists {
-					this.unknownError(ctx, err)
-				} else {
-					ctx.String(http.StatusNotFound, "File Not Found")
-				}
+			} else if fi, exists, err := this.getFile(filename); err != nil && exists {
+				this.unknownError(ctx, err)
 			} else {
-				if fi.IsDir() {
+				if fi != nil && fi.IsDir() {
 					if fs, err := ioutil.ReadDir(filename); err != nil {
 						ctx.String(500, "Could Not get Contents of Directory")
 					} else {
@@ -139,14 +138,22 @@ func (this *Server) Start() {
 }
 
 func (this *Server) sendFile(ctx *gin.Context, filename string) {
-	if file, reader, err := files.GetFile(filename); err != nil {
-		this.unknownError(ctx, err)
+	this.log.Infof("Sending File %s", filename)
+	if handled, file, reader, err := files.GetFile(ctx, filename); err != nil {
+		if os.IsNotExist(err) {
+			ctx.String(http.StatusNotFound, "File Not Found")
+		} else {
+			this.unknownError(ctx, err)
+		}
+	} else if handled {
+		// The library handled sending the file itself
+		return
 	} else {
 		defer reader.Close()
 		fileSize := determineFileSize(file, reader)
 
 		if fileSize < files.GetBufferLimit() {
-			this.sendFileNoMeta(ctx, filename, file.ContentType)
+			this.sendFileNoMeta(ctx, file.Name, file.ContentType)
 			return
 		}
 
@@ -164,9 +171,15 @@ func (this *Server) sendFile(ctx *gin.Context, filename string) {
 }
 
 func (this *Server) sendFileNoMeta(ctx *gin.Context, filename string, contentType string) {
+	if !files.FileExists(filename) {
+		ctx.String(http.StatusNotFound, "File Not Found")
+		return
+	}
 	data, err := ioutil.ReadFile(filename)
 	if err == nil {
 		ctx.Data(200, contentType, data)
+	} else {
+		this.unknownError(ctx, err)
 	}
 }
 
@@ -193,6 +206,18 @@ func (this *Server) postFile() gin.HandlerFunc {
 			} else if err := files.DownloadFile(string(data), this.root+ctx.Request.URL.Path); err != nil {
 				this.log.Error("Error Pulling MetaData", err)
 				ctx.String(500, "Unable to download MetaData")
+			} else {
+				this.success(ctx)
+			}
+			return
+		case "url/proxy":
+			this.log.Infof("Creating Proxy")
+			// User wants to define a proxy url
+			if data, err := ctx.GetRawData(); err != nil {
+				ctx.String(500, "Unable to read URL")
+			} else if err := files.CreateProxy(string(data), ctx.Request.URL.Path); err != nil {
+				this.log.Error("Error Creating Proxy MetaData", err)
+				ctx.String(500, "Unable to create Proxy MetaData")
 			} else {
 				this.success(ctx)
 			}

@@ -1,20 +1,15 @@
 import React from "react";
-import { Form, Input, Button, Upload, Row, Col } from "antd";
+import { Form, Input, Button, Row, Col, Tabs } from "antd";
 import Cookies from "js-cookie";
-import { toast } from "react-toastify";
-import { UploadOutlined } from "@ant-design/icons";
 import { withRouter, RouteComponentProps } from "react-router-dom";
+import FileUploadForm from "./FileUploadForm";
+import UrlUploadForm from "./UrlUploadForm";
+import CreateProxyForm from "./CreateProxyForm";
 
 interface Props extends RouteComponentProps<any> {}
 
 interface State {
   creds?: Creds;
-  url: string;
-}
-
-interface Creds {
-  username: string;
-  password: string;
 }
 
 export default withRouter(
@@ -22,7 +17,6 @@ export default withRouter(
     constructor(props: Props) {
       super(props);
       this.state = {
-        url: `/file`,
         creds: Cookies.getJSON(`creds`),
       };
     }
@@ -84,55 +78,23 @@ export default withRouter(
             </Form.Item>
           </Form>
 
-          <Form>
-            <h3>Upload a File</h3>
-
-            <Row gutter={24}>
-              <Col span={6} />
-              <Col
-                span={12}
-                children={
-                  <Form.Item
-                    label="Path"
-                    name="path"
-                    initialValue={this.state.url}
-                    rules={[
-                      { required: true, message: "Please input A Path!" },
-                    ]}
-                  >
-                    <Input
-                      value={this.state.url}
-                      onChange={(e) => {
-                        const url = e.target.value;
-                        console.log(url);
-                        this.setState((prev) => ({ ...prev, url }));
-                      }}
-                    />
-                  </Form.Item>
-                }
-              />
-              <Col span={6} />
-            </Row>
-
-            <Upload.Dragger
-              method="PUT"
-              action={this.state.url}
-              onChange={(state) => {
-                if (state.file.status === "done") {
-                  toast(`Uploaded Successfully!`, { type: "success" });
-                }
-              }}
-              headers={{
-                Authorization: `Basic ${btoa(
-                  `${this.state.creds?.username}:${this.state.creds?.password}`
-                )}`,
-              }}
-            >
-              <p className="ant-upload-drag-icon">
-                <UploadOutlined /> Click or Drag To Upload
-              </p>
-            </Upload.Dragger>
-          </Form>
+          <Tabs defaultActiveKey="fileUpload">
+            <Tabs.TabPane
+              tab="File Upload"
+              key="fileUpload"
+              children={<FileUploadForm creds={this.state.creds} />}
+            />
+            <Tabs.TabPane
+              tab="URL Upload"
+              key="urlUpload"
+              children={<UrlUploadForm creds={this.state.creds} />}
+            />
+            <Tabs.TabPane
+              tab="Proxy"
+              key="proxy"
+              children={<CreateProxyForm creds={this.state.creds} />}
+            />
+          </Tabs>
         </div>
       );
     }

@@ -3,6 +3,8 @@ package files
 import (
 	"bufio"
 	"errors"
+	"fmt"
+	"github.com/gin-gonic/gin"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"net/http"
@@ -15,6 +17,7 @@ import (
 const (
 	MetaSuffix         = ".meta"
 	DefaultPermissions = 0644
+	ProxyFolder        = "/temp"
 )
 
 func GetBufferLimit() int64 {
@@ -42,28 +45,51 @@ func WriteFile(file MetaData, content []byte) error {
 	}
 }
 
-func GetFile(filename string) (*MetaData, *os.File, error) {
+/*	bool = handled -> Whether or not the sending of the file has been handled by this function
+	MetaData = meta -> Metadata file on the requested URL
+	os.File = file -> The File Requested on the Filesystem
+	error = err -> Any Errors during file fetch
+*/
+func GetFile(ctx *gin.Context, filename string) (bool, *MetaData, *os.File, error) {
 	if strings.HasSuffix(filename, MetaSuffix) {
-		return nil, nil, errors.New("attempt to read meta file")
+		return false, nil, nil, errors.New("attempt to read meta file")
 	}
 	if file, err := ReadMetaFile(filename); err != nil {
-		return nil, nil, err
+		return false, nil, nil, err
+	} else if len(file.ProxyPath) > 0 {
+		// Handle Proxy Path
+		return handleProxy(ctx, file)
 	} else if reader, err := os.Open(filename); err != nil {
-		return nil, nil, err
+		return false, nil, nil, err
 	} else {
-		return file, reader, nil
+		return false, file, reader, nil
+	}
+}
+
+func CreateProxy(proxyUrl string, fileUrl string) error {
+	_, meta, err := DownloadTempFile(proxyUrl, fileUrl)
+	if err != nil {
+		return err
+	} else {
+		return writeMetaFile(MetaData{
+			Name:        meta.Name,
+			ContentType: meta.ContentType,
+			LastUpdated: meta.LastUpdated,
+			Protected:   false,
+			Size:        0,
+			ProxyPath:   proxyUrl,
+		})
 	}
 }
 
 func writeMetaFile(file MetaData) error {
-	if data, err := yaml.Marshal(MetaData{
-		Name:        file.Name,
-		ContentType: file.ContentType,
-		LastUpdated: file.LastUpdated,
-		Size:        file.Size,
-	}); err != nil {
+	return writeMetaFileTo(file, file.Name+MetaSuffix)
+}
+
+func writeMetaFileTo(file MetaData, path string) error {
+	if data, err := yaml.Marshal(file); err != nil {
 		return err
-	} else if err := ioutil.WriteFile(file.Name+MetaSuffix, data, DefaultPermissions);
+	} else if err := ioutil.WriteFile(path, data, DefaultPermissions);
 		err != nil {
 		return err
 	} else {
@@ -84,6 +110,32 @@ func GetJsonData(filename string) (*JSONFile, error) {
 	}
 }
 
+func handleProxy(ctx *gin.Context, metaFile *MetaData) (bool, *MetaData, *os.File, error) {
+	urlPath := ctx.Request.URL.Path
+	fmt.Printf("Handling Proxying on %s\n", urlPath)
+	tempPath := ProxyFolder + urlPath
+	if !FileExists(ProxyFolder) {
+		_ = os.Mkdir(ProxyFolder, 0777)
+	}
+	if FileExists(tempPath) {
+		// File has been previously downloaded
+		if reader, err := os.Open(tempPath); err != nil {
+			return false, nil, nil, err
+		} else {
+			return false, metaFile, reader, nil
+		}
+	} else {
+		// Download File and write the stream to the response
+		data, meta, err := DownloadTempFile(metaFile.ProxyPath, tempPath)
+		if err != nil {
+			return false, nil, nil, err
+		} else {
+			ctx.Data(200, meta.ContentType, data)
+			return true, nil, nil, nil
+		}
+	}
+}
+
 func ReadMetaFile(filename string) (*MetaData, error) {
 	if data, err := ioutil.ReadFile(filename + MetaSuffix);
 		err != nil {
@@ -94,6 +146,7 @@ func ReadMetaFile(filename string) (*MetaData, error) {
 			err != nil {
 			return nil, err
 		} else {
+			//fmt.Printf("META: %+v", file)
 			return &file, nil
 		}
 	}
@@ -123,6 +176,40 @@ func DownloadFile(url string, filename string) error {
 	}
 }
 
+func DownloadTempFile(url string, filename string) ([]byte, *MetaData, error) {
+	tempFilename := ProxyFolder + filename
+	if resp, err := http.Get(url); err != nil {
+		return nil, nil, err
+	} else {
+		defer resp.Body.Close()
+		file, err := os.Create(tempFilename)
+		if err != nil {
+			return nil, nil, err
+		}
+		data, err := ioutil.ReadAll(resp.Body)
+		meta := MetaData{
+			Name:        tempFilename,
+			ContentType: resp.Header.Get("Content-Type"),
+			LastUpdated: time.Now().UnixNano(),
+			Protected:   false,
+			ProxyPath:   url,
+			Size:        getSize(tempFilename),
+		}
+		go func() {
+			_, err = bufio.NewWriter(file).Write(data)
+			if err != nil {
+				fmt.Printf("Error Writing file Async %+v", err)
+			} else {
+				err := writeMetaFileTo(meta, "/files"+filename+MetaSuffix)
+				if err != nil {
+					fmt.Printf("Error Writing file Async %+v", err)
+				}
+			}
+		}()
+		return data, &meta, nil
+	}
+}
+
 func getSize(filename string) int64 {
 	if stat, err := os.Stat(filename); err != nil {
 		return 0
@@ -131,12 +218,21 @@ func getSize(filename string) int64 {
 	}
 }
 
+func FileExists(filename string) bool {
+	info, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return !info.IsDir()
+}
+
 type MetaData struct {
 	Name        string `yaml:"name"`
 	ContentType string `yaml:"contentType"`
 	LastUpdated int64  `yaml:"lastUpdated"`
 	Protected   bool   `yaml:"protected"`
 	Size        int64  `yaml:"size"`
+	ProxyPath   string `yaml:"proxyPath"`
 }
 
 type JSONFile struct {

@@ -30,6 +30,9 @@ RUN yarn build
 
 FROM registry.access.redhat.com/ubi8:latest
 
+WORKDIR /temp
+# To create the temp folder inside of the image
+
 WORKDIR /files
 
 COPY --from=go /app/application.file /server

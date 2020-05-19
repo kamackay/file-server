@@ -48,7 +48,7 @@ spec:
           readinessProbe:
             httpGet:
               port: 8080
-              path: /
+              path: /file
             initialDelaySeconds: 0
             timeoutSeconds: 1
             periodSeconds: 10
@@ -58,7 +58,7 @@ spec:
             - name: GIN_MODE
               value: "release"
             - name: BUFFER_LIMIT
-              value: "5"
+              value: "120000000"
           volumeMounts:
             - name: file-system
               mountPath: /files
