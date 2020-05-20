@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -31,13 +32,11 @@ func GetBufferLimit() int64 {
 }
 
 func WriteFile(file MetaData, content []byte) error {
-	if err := ioutil.WriteFile(file.Name, content, DefaultPermissions);
-		err != nil {
+	if err := ioutil.WriteFile(file.Name, content, DefaultPermissions); err != nil {
 		return err
 	} else {
-		file.Size = getSize(file.Name)
-		if err := writeMetaFile(file);
-			err != nil {
+		file.Size = GetSize(file.Name)
+		if err := writeMetaFile(file); err != nil {
 			return err
 		} else {
 			return nil
@@ -89,8 +88,7 @@ func writeMetaFile(file MetaData) error {
 func writeMetaFileTo(file MetaData, path string) error {
 	if data, err := yaml.Marshal(file); err != nil {
 		return err
-	} else if err := ioutil.WriteFile(path, data, DefaultPermissions);
-		err != nil {
+	} else if err := ioutil.WriteFile(path, data, DefaultPermissions); err != nil {
 		return err
 	} else {
 		return nil
@@ -98,14 +96,14 @@ func writeMetaFileTo(file MetaData, path string) error {
 }
 
 func GetJsonData(filename string) (*JSONFile, error) {
-	if file, err := ReadMetaFile(filename);
-		err != nil {
+	if file, err := ReadMetaFile(filename); err != nil {
 		return nil, err
 	} else {
 		return &JSONFile{
-			Name:        file.Name,
+			Name:        MakeRelative(file.Name),
 			ContentType: file.ContentType,
 			LastUpdated: file.LastUpdated,
+			Folder:      false,
 		}, nil
 	}
 }
@@ -137,13 +135,11 @@ func handleProxy(ctx *gin.Context, metaFile *MetaData) (bool, *MetaData, *os.Fil
 }
 
 func ReadMetaFile(filename string) (*MetaData, error) {
-	if data, err := ioutil.ReadFile(filename + MetaSuffix);
-		err != nil {
+	if data, err := ioutil.ReadFile(filename + MetaSuffix); err != nil {
 		return nil, err
 	} else {
 		var file MetaData
-		if err := yaml.Unmarshal(data, &file);
-			err != nil {
+		if err := yaml.Unmarshal(data, &file); err != nil {
 			return nil, err
 		} else {
 			//fmt.Printf("META: %+v", file)
@@ -170,7 +166,7 @@ func DownloadFile(url string, filename string) error {
 				ContentType: resp.Header.Get("Content-Type"),
 				LastUpdated: time.Now().UnixNano(),
 				Protected:   false,
-				Size:        getSize(filename),
+				Size:        GetSize(filename),
 			})
 		}
 	}
@@ -193,7 +189,7 @@ func DownloadTempFile(url string, filename string) ([]byte, *MetaData, error) {
 			LastUpdated: time.Now().UnixNano(),
 			Protected:   false,
 			ProxyPath:   url,
-			Size:        getSize(tempFilename),
+			Size:        GetSize(tempFilename),
 		}
 		go func() {
 			_, err = bufio.NewWriter(file).Write(data)
@@ -210,20 +206,8 @@ func DownloadTempFile(url string, filename string) ([]byte, *MetaData, error) {
 	}
 }
 
-func getSize(filename string) int64 {
-	if stat, err := os.Stat(filename); err != nil {
-		return 0
-	} else {
-		return stat.Size()
-	}
-}
-
-func FileExists(filename string) bool {
-	info, err := os.Stat(filename)
-	if os.IsNotExist(err) {
-		return false
-	}
-	return !info.IsDir()
+func MakeRelative(filename string) string {
+	return regexp.MustCompile("^/files").ReplaceAllString(filename, "")
 }
 
 type MetaData struct {
@@ -239,4 +223,5 @@ type JSONFile struct {
 	Name        string `json:"name"`
 	ContentType string `json:"contentType"`
 	LastUpdated int64  `json:"lastUpdated"`
+	Folder      bool   `json:"folder"`
 }

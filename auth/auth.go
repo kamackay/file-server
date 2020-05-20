@@ -61,7 +61,7 @@ func (this *Authorizer) Validate(ctx *gin.Context) bool {
 			return true
 		} else {
 			this.Decline(ctx)
-			this.log.Warnf("Declining Request")
+			this.log.Warnf("Declining Request with Authorization `%s`", ctx.GetHeader("Authorization"))
 			return false
 		}
 	} else {

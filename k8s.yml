@@ -48,7 +48,7 @@ spec:
           readinessProbe:
             httpGet:
               port: 8080
-              path: /file
+              path: /ui/
             initialDelaySeconds: 0
             timeoutSeconds: 1
             periodSeconds: 10

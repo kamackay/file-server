@@ -11,6 +11,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"gitlab.com/kamackay/filer/auth"
 	"gitlab.com/kamackay/filer/files"
+	"gitlab.com/kamackay/filer/utils"
 	"gopkg.in/yaml.v2"
 	"io"
 	"io/ioutil"
@@ -66,7 +67,7 @@ func (this *Server) Start() {
 		func(ctx *gin.Context) {
 			filename := this.root + ctx.Request.URL.Path
 			urlPath := ctx.Request.URL.Path
-			if urlPath == "/" {
+			if urlPath == "/" && !this.isFolderReq(ctx) {
 				ctx.Redirect(http.StatusTemporaryRedirect, "/ui/")
 			} else if regexp.MustCompile("^/ui/?.*").MatchString(urlPath) {
 				if urlPath == "/ui" || urlPath == "/ui/" {
@@ -78,7 +79,7 @@ func (this *Server) Start() {
 			} else if fi, exists, err := this.getFile(filename); err != nil && exists {
 				this.unknownError(ctx, err)
 			} else {
-				if fi != nil && fi.IsDir() {
+				if fi != nil && fi.IsDir() && this.isFolderReq(ctx) {
 					if fs, err := ioutil.ReadDir(filename); err != nil {
 						ctx.String(500, "Could Not get Contents of Directory")
 					} else {
@@ -91,10 +92,12 @@ func (this *Server) Start() {
 							if !strings.HasSuffix(f.Name(), files.MetaSuffix) {
 								jsonData, err := files.GetJsonData(path.Join(filename, f.Name()))
 								if err != nil {
+									isDir := files.IsDir(f.Name())
 									paths = append(paths, &files.JSONFile{
-										Name:        f.Name(),
-										ContentType: "text/plain",
+										Name:        files.MakeRelative(f.Name()),
+										ContentType: utils.TernaryString(isDir, "folder", "text/plain"),
 										LastUpdated: 0,
+										Folder:      isDir,
 									})
 								} else {
 									paths = append(paths, jsonData)
