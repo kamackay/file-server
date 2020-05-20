@@ -10,6 +10,7 @@ import (
 	"github.com/robfig/cron/v3"
 	"github.com/sirupsen/logrus"
 	"gitlab.com/kamackay/filer/auth"
+	"gitlab.com/kamackay/filer/compresssion"
 	"gitlab.com/kamackay/filer/files"
 	"gitlab.com/kamackay/filer/utils"
 	"gopkg.in/yaml.v2"
@@ -36,6 +37,7 @@ type Server struct {
 	store      *persistence.InMemoryStore
 	cronRunner *cron.Cron
 	auth       *auth.Authorizer
+	comp       *compresssion.Compressor
 	config     Config
 }
 
@@ -51,12 +53,14 @@ func New(root string) *Server {
 		root:       root,
 		cronRunner: cron.New(),
 		auth:       auth.New(root),
+		comp:       compresssion.New(),
 	}).readConfig()
 }
 
 func (this *Server) Start() {
 	this.store = persistence.NewInMemoryStore(CacheTime)
 	this.engine.Use(this.auth.Bind())
+	this.engine.Use(this.comp.Bind())
 	this.engine.Use(gzip.Gzip(gzip.BestCompression))
 	this.engine.Use(cors.Default())
 
@@ -70,7 +74,7 @@ func (this *Server) Start() {
 			if urlPath == "/" && !this.isFolderReq(ctx) {
 				ctx.Redirect(http.StatusTemporaryRedirect, "/ui/")
 			} else if regexp.MustCompile("^/ui/?.*").MatchString(urlPath) {
-				if urlPath == "/ui" || urlPath == "/ui/" {
+				if regexp.MustCompile("^/ui/?").MatchString(urlPath) {
 					// Send Root UI file
 					this.sendFileNoMeta(ctx, "/ui/index.html", "text/html")
 				} else {

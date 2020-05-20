@@ -11,3 +11,12 @@ func TernaryString(cond bool, positive string, negative string) string {
 		return negative
 	}
 }
+
+func StrArrIncludes(arr []string, val string) int {
+	for x, v := range arr {
+		if v == val {
+			return x
+		}
+	}
+	return -1
+}
