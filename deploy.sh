@@ -1,6 +1,7 @@
 IMAGE=registry.gitlab.com/kamackay/filer:$1
 
 time docker build . -t "$IMAGE" && \
+    # docker-squash "$IMAGE" --tag "$IMAGE" && \
     docker push "$IMAGE" && \
     kubectl --context do-nyc3-keithmackay-cluster -n file-server \
       set image statefulset/file-server server=$IMAGE && \

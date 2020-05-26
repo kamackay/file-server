@@ -74,8 +74,9 @@ func (this *Server) Start() {
 			if urlPath == "/" && !this.isFolderReq(ctx) {
 				ctx.Redirect(http.StatusTemporaryRedirect, "/ui/")
 			} else if regexp.MustCompile("^/ui/?.*").MatchString(urlPath) {
-				if regexp.MustCompile("^/ui/?").MatchString(urlPath) {
+				if regexp.MustCompile("^/ui/?$").MatchString(urlPath) {
 					// Send Root UI file
+					this.log.Debugf("Sending index.html for request on %s", urlPath)
 					this.sendFileNoMeta(ctx, "/ui/index.html", "text/html")
 				} else {
 					this.sendFileNoMeta(ctx, urlPath, "text/javascript")
