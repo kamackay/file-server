@@ -1,7 +1,8 @@
-import React from "react";
 import { UploadOutlined } from "@ant-design/icons";
-import { Row, Form, Col, Input, Upload } from "antd";
+import { Col, Form, Input, Row, Upload } from "antd";
+import React from "react";
 import { toast } from "react-toastify";
+
 import { makeAuthHeader } from "../utils/utils";
 
 export default (props: { creds?: Creds }) => {

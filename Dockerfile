@@ -12,7 +12,7 @@ ADD ./go.mod ./
 RUN go mod download && \
     go mod verify
 
-ADD ./ ./
+COPY ./ ./
 
 RUN go build -o application.file ./*.go && cp ./application.file /app/
 

@@ -7,6 +7,7 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/render"
 	"github.com/robfig/cron/v3"
 	"github.com/sirupsen/logrus"
 	"gitlab.com/kamackay/filer/auth"
@@ -71,7 +72,7 @@ func (this *Server) Start() {
 		func(ctx *gin.Context) {
 			filename := this.root + ctx.Request.URL.Path
 			urlPath := ctx.Request.URL.Path
-			if urlPath == "/" && !this.isFolderReq(ctx) {
+			if urlPath == "/" && !this.auth.IsFolderReq(ctx) {
 				ctx.Redirect(http.StatusTemporaryRedirect, "/ui/")
 			} else if regexp.MustCompile("^/ui/?.*").MatchString(urlPath) {
 				if regexp.MustCompile("^/ui/?$").MatchString(urlPath) {
@@ -84,11 +85,12 @@ func (this *Server) Start() {
 			} else if fi, exists, err := this.getFile(filename); err != nil && exists {
 				this.unknownError(ctx, err)
 			} else {
-				if fi != nil && fi.IsDir() && this.isFolderReq(ctx) {
+				if fi != nil && fi.IsDir() && this.auth.IsFolderReq(ctx) {
 					if fs, err := ioutil.ReadDir(filename); err != nil {
 						ctx.String(500, "Could Not get Contents of Directory")
 					} else {
-						if !this.auth.AllowedToViewFolder(ctx) {
+						if !this.auth.AllowedToViewFolder(ctx, filename) {
+							ctx.Header("type", "folder")
 							ctx.JSON(200, make([]string, 0))
 							return
 						}
@@ -103,12 +105,14 @@ func (this *Server) Start() {
 										ContentType: utils.TernaryString(isDir, "folder", "text/plain"),
 										LastUpdated: 0,
 										Folder:      isDir,
+										Protected:   !this.auth.AllowedToViewFolder(ctx, f.Name()),
 									})
 								} else {
 									paths = append(paths, jsonData)
 								}
 							}
 						}
+						ctx.Header("type", "folder")
 						ctx.JSON(200, paths)
 					}
 				} else {
@@ -169,7 +173,9 @@ func (this *Server) sendFile(ctx *gin.Context, filename string) {
 			fileSize,
 			file.ContentType,
 			reader,
-			map[string]string{})
+			map[string]string{
+				"type": "file",
+			})
 
 		// It seems that the Gin Cache is unable to handle this, and causes errors
 		defer func() {
@@ -185,7 +191,11 @@ func (this *Server) sendFileNoMeta(ctx *gin.Context, filename string, contentTyp
 	}
 	data, err := ioutil.ReadFile(filename)
 	if err == nil {
-		ctx.Data(200, contentType, data)
+		ctx.Header("type", "file")
+		ctx.Render(http.StatusOK, render.Data{
+			ContentType: contentType,
+			Data:        data,
+		})
 	} else {
 		this.unknownError(ctx, err)
 	}

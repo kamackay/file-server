@@ -54,8 +54,15 @@ func (this *Authorizer) Bind() gin.HandlerFunc {
 //Validate Return True if this request was valid
 func (this *Authorizer) Validate(ctx *gin.Context) bool {
 	this.log.Infof("Validating Request on `%s`", ctx.Request.URL.Path)
-
-	if this.requiresValidation(ctx) {
+	requiresValidation, err := this.requiresValidation(ctx)
+	if err != nil {
+		if os.IsNotExist(err) {
+			ctx.AbortWithStatus(http.StatusNotFound)
+		} else {
+			ctx.AbortWithStatus(http.StatusInternalServerError)
+		}
+		return false
+	} else if requiresValidation {
 		this.log.Infof("Request Requires Validation")
 		if this.validate(ctx, strings.ToUpper(ctx.Request.Method) == http.MethodGet) {
 			return true
@@ -75,28 +82,28 @@ func (this *Authorizer) Decline(ctx *gin.Context) {
 	ctx.AbortWithStatus(http.StatusUnauthorized)
 }
 
-func (this *Authorizer) AllowedToViewFolder(ctx *gin.Context) bool {
+func (this *Authorizer) AllowedToViewFolder(ctx *gin.Context, path string) bool {
 	return true
 }
 
-func (this *Authorizer) requiresValidation(ctx *gin.Context) bool {
+func (this *Authorizer) requiresValidation(ctx *gin.Context) (bool, error) {
 	path := ctx.Request.URL.Path
 	switch strings.ToUpper(ctx.Request.Method) {
 	case http.MethodGet:
 		if regexp.MustCompile("^/ui/?.*").MatchString(path) {
 			// UI Paths should always return
-			return false
+			return false, nil
 		}
 		meta, err := files.ReadMetaFile(this.fsRoot + ctx.Request.URL.Path)
 		if err != nil {
-			return true
+			return true, err
 		} else {
-			return meta.Protected
+			return meta.Protected, nil
 		}
 	case http.MethodPut, http.MethodPost, http.MethodDelete:
-		return true
+		return true, nil
 	default:
-		return true
+		return true, nil
 	}
 }
 
@@ -128,6 +135,10 @@ func (this *Authorizer) validateReadOnly(header string) bool {
 
 func (this *Authorizer) getAuthHeader() string {
 	return encodeAuth(this.config.DefaultAuth)
+}
+
+func (this *Authorizer) IsFolderReq(ctx *gin.Context) bool {
+	return ctx.GetHeader("Get-Folder") == "true"
 }
 
 func encodeAuth(auth Auth) string {

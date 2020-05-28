@@ -104,6 +104,7 @@ func GetJsonData(filename string) (*JSONFile, error) {
 			ContentType: file.ContentType,
 			LastUpdated: file.LastUpdated,
 			Folder:      false,
+			Protected:   file.Protected,
 		}, nil
 	}
 }
@@ -224,4 +225,5 @@ type JSONFile struct {
 	ContentType string `json:"contentType"`
 	LastUpdated int64  `json:"lastUpdated"`
 	Folder      bool   `json:"folder"`
+	Protected   bool   `json:"protected"`
 }

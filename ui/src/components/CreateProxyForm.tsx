@@ -30,7 +30,7 @@ export default (props: { creds?: Creds }) => {
       }}
     >
       <h3>Create a Proxy</h3>
-      <h5>The Server will Create a Proxy configuration</h5>
+      <h5>The Server will Proxy a URL, and store it in a temporary cache</h5>
 
       <Row gutter={24}>
         <Col span={6} />

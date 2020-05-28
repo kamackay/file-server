@@ -8,3 +8,6 @@ services:
       - "2121:8080"
     environment:
       - "PORT=8080"
+    volumes:
+      - ./ignore/files:/files
+      - ./ignore/auth.yml:/auth.yml

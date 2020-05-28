@@ -26,6 +26,3 @@ func (this *Server) getFile(path string) (os.FileInfo, bool, error) {
 	}
 }
 
-func (this *Server) isFolderReq(ctx *gin.Context) bool {
-	return ctx.GetHeader("Get-Folder") == "true"
-}

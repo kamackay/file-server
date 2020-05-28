@@ -1,15 +1,17 @@
-import React from "react";
-import { Form, Input, Button, Row, Col, Tabs } from "antd";
+import { FolderViewOutlined as BrowseIcon } from "@ant-design/icons";
+import { Button, Col, Form, Input, Row, Tabs } from "antd";
 import Cookies from "js-cookie";
-import { withRouter, RouteComponentProps } from "react-router-dom";
+import React from "react";
+import { RouteComponentProps, withRouter } from "react-router-dom";
+
+import CreateProxyForm from "./CreateProxyForm";
 import FileUploadForm from "./FileUploadForm";
 import UrlUploadForm from "./UrlUploadForm";
-import CreateProxyForm from "./CreateProxyForm";
 
 interface Props extends RouteComponentProps<any> {}
 
 interface State {
-  creds?: Creds;
+  creds: Creds;
 }
 
 export default withRouter(
@@ -17,9 +19,19 @@ export default withRouter(
     constructor(props: Props) {
       super(props);
       this.state = {
-        creds: Cookies.getJSON(`creds`),
+        creds: Cookies.getJSON(`creds`) || { username: "", password: "" },
       };
     }
+
+    private setCred = (key: keyof Creds) => (
+      event: React.ChangeEvent<HTMLInputElement>
+    ) => {
+      const value = event.target.value;
+      this.setState((prev) => ({
+        ...prev,
+        creds: { ...prev.creds, [key]: value },
+      }));
+    };
 
     public render() {
       return (
@@ -48,7 +60,7 @@ export default withRouter(
                         message: "Please input your username!",
                       },
                     ]}
-                    children={<Input />}
+                    children={<Input onChange={this.setCred("username")} />}
                   />
                 }
               />
@@ -65,18 +77,20 @@ export default withRouter(
                         message: "Please input your password!",
                       },
                     ]}
-                    children={<Input.Password />}
+                    children={
+                      <Input.Password onChange={this.setCred("password")} />
+                    }
                   />
                 }
               />
             </Row>
-
-            <Form.Item>
-              <Button type="primary" htmlType="submit">
-                Save
-              </Button>
-            </Form.Item>
           </Form>
+
+          <Button
+            icon={<BrowseIcon />}
+            onClick={() => this.props.history.push(`/browse/`)}
+            children="Browse"
+          />
 
           <Tabs defaultActiveKey="fileUpload">
             <Tabs.TabPane
