@@ -1,6 +1,9 @@
 import "promise-peek";
 
-import { HomeOutlined as HomeIcon } from "@ant-design/icons";
+import {
+  HomeOutlined as HomeIcon,
+  FolderOutlined as RootIcon,
+} from "@ant-design/icons";
 import { Breadcrumb } from "antd";
 import Axios from "axios";
 import React from "react";
@@ -94,48 +97,63 @@ export default withRouter(
       }
     };
 
+    private renderBreadcrumb = () => {
+      const { path } = this.state;
+      return (
+        <Breadcrumb>
+          {[
+            <Breadcrumb.Item key={`home`}>
+              <Link to="/">
+                <HomeIcon />
+              </Link>
+            </Breadcrumb.Item>,
+            <Breadcrumb.Item key={`root`}>
+              <Link to="/browse/">
+                <RootIcon />
+              </Link>
+            </Breadcrumb.Item>,
+            ...(path || []).map((part, x) => {
+              const route = [BROWSE_PATH, ...(path || []).slice(0, x + 1)].join(
+                `/`
+              );
+              return (
+                <Breadcrumb.Item key={`part-${part}-${x}`}>
+                  <Link to={route}>{part}</Link>
+                </Breadcrumb.Item>
+              );
+            }),
+          ]}
+        </Breadcrumb>
+      );
+    };
+
     private renderFile = () => {
       const contents = this.state.contents as string;
-      return <div>{contents.length}</div>;
+      return (
+        <div>
+          <this.renderBreadcrumb />
+          <div style={{ display: "block" }}>{contents.length}</div>
+        </div>
+      );
     };
 
     private renderFolder = () => {
       const contents = this.state.contents as FilerFile[];
-      const { path, pathname } = this.state;
+      const { pathname } = this.state;
       return (
         <div>
-          <Breadcrumb>
-            {[
-              <Breadcrumb.Item key={`home`}>
-                <Link to="/">
-                  <HomeIcon />
-                </Link>
-              </Breadcrumb.Item>,
-              ...(path || []).map((part, x) => {
-                const route = [
-                  BROWSE_PATH,
-                  ...(path || []).slice(0, x + 1),
-                ].join(`/`);
-                return (
-                  <Breadcrumb.Item key={`part-${part}-${x}`}>
-                    <Link to={route}>{part}</Link>
-                  </Breadcrumb.Item>
-                );
-              }),
-            ]}
-
-            <div style={{ display: "block" }}>
-              {contents!.map((file, x) => {
-                return (
-                  <FilerFile
-                    key={`${x}`}
-                    path={urljoin(BROWSE_PATH, pathname || "")}
-                    file={file}
-                  />
-                );
-              })}
-            </div>
-          </Breadcrumb>
+          <this.renderBreadcrumb />
+          <div style={{ display: "block" }}>
+            {contents!.map((file, x) => {
+              return (
+                <FilerFile
+                  key={`${x}`}
+                  path={urljoin(BROWSE_PATH, pathname || "")}
+                  file={file}
+                />
+              );
+            })}
+          </div>
         </div>
       );
     };
