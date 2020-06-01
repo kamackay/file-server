@@ -68,7 +68,7 @@ func (this *Server) Start() {
 	this.engine.PUT("/*root", this.uploadFile())
 	this.engine.POST("/*root", this.postFile())
 
-	this.engine.GET("/*root", cache.CachePage(this.store, CacheTime,
+	this.engine.GET("/*root",
 		func(ctx *gin.Context) {
 			filename := this.root + ctx.Request.URL.Path
 			urlPath := ctx.Request.URL.Path
@@ -119,7 +119,7 @@ func (this *Server) Start() {
 					this.sendFile(ctx, filename)
 				}
 			}
-		}))
+		})
 
 	this.engine.DELETE("/*root", func(ctx *gin.Context) {
 		file := this.root + ctx.Request.URL.Path
