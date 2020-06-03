@@ -73,6 +73,7 @@ export default withRouter(
         })
         .then((r) => r.data)
         .then((data: Contents) => {
+          console.log(data);
           this.setState((prev) => ({
             ...prev,
             type,
@@ -128,11 +129,18 @@ export default withRouter(
     };
 
     private renderFile = () => {
-      const contents = this.state.contents as string;
+      //const contents = this.state.contents as string;
       return (
         <div>
           <this.renderBreadcrumb />
-          <div style={{ display: "block" }}>{contents.length}</div>
+          <a href={this.state.pathname}>Open Raw</a>
+          <div style={{ display: "block" }}>
+            <iframe
+              style={{ width: "100%", minHeight: "70vh", border: 0 }}
+              src={this.state.pathname}
+              title="File"
+            ></iframe>
+          </div>
         </div>
       );
     };

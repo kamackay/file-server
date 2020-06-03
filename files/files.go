@@ -208,7 +208,12 @@ func DownloadTempFile(url string, filename string) ([]byte, *MetaData, error) {
 }
 
 func MakeRelative(filename string) string {
-	return regexp.MustCompile("^/files").ReplaceAllString(filename, "")
+	s := regexp.MustCompile("^/files").ReplaceAllString(filename, "")
+	if regexp.MustCompile("/.*").MatchString(s) {
+		return s
+	} else {
+		return "/" + s
+	}
 }
 
 type MetaData struct {

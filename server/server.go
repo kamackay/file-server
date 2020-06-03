@@ -2,8 +2,6 @@ package server
 
 import (
 	"fmt"
-	"github.com/gin-contrib/cache"
-	"github.com/gin-contrib/cache/persistence"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
@@ -32,10 +30,10 @@ const (
 )
 
 type Server struct {
-	log        *logrus.Logger
-	engine     *gin.Engine
-	root       string
-	store      *persistence.InMemoryStore
+	log    *logrus.Logger
+	engine *gin.Engine
+	root   string
+	//store      *persistence.InMemoryStore
 	cronRunner *cron.Cron
 	auth       *auth.Authorizer
 	comp       *compresssion.Compressor
@@ -59,7 +57,7 @@ func New(root string) *Server {
 }
 
 func (this *Server) Start() {
-	this.store = persistence.NewInMemoryStore(CacheTime)
+	//this.store = persistence.NewInMemoryStore(CacheTime)
 	this.engine.Use(this.auth.Bind())
 	this.engine.Use(this.comp.Bind())
 	this.engine.Use(gzip.Gzip(gzip.BestCompression))
@@ -115,6 +113,18 @@ func (this *Server) Start() {
 						ctx.Header("type", "folder")
 						ctx.JSON(200, paths)
 					}
+				//} else if this.auth.IsFolderReq(ctx) {
+				//	// Just send metadata headers
+				//	meta, err := files.ReadMetaFile(filename)
+				//	if err != nil {
+				//		this.unknownError(ctx, err)
+				//	} else {
+				//		ctx.Header("type", "file")
+				//		ctx.Render(http.StatusOK, render.Data{
+				//			ContentType: meta.ContentType,
+				//			Data:        make([]byte, 0),
+				//		})
+				//	}
 				} else {
 					this.sendFile(ctx, filename)
 				}
@@ -178,9 +188,9 @@ func (this *Server) sendFile(ctx *gin.Context, filename string) {
 			})
 
 		// It seems that the Gin Cache is unable to handle this, and causes errors
-		defer func() {
-			_ = this.store.Delete(cache.CreateKey(ctx.Request.RequestURI))
-		}()
+		//defer func() {
+		//	_ = this.store.Delete(cache.CreateKey(ctx.Request.RequestURI))
+		//}()
 	}
 }
 
@@ -248,8 +258,8 @@ func (this *Server) postFile() gin.HandlerFunc {
 
 func (this *Server) success(ctx *gin.Context) {
 	ctx.String(200, "Written Successfully")
-	_ = this.store.Delete(cache.CreateKey(ctx.Request.RequestURI))
-	_ = this.store.Delete(cache.CreateKey("/"))
+	//_ = this.store.Delete(cache.CreateKey(ctx.Request.RequestURI))
+	//_ = this.store.Delete(cache.CreateKey("/"))
 }
 
 func (this *Server) uploadFile() gin.HandlerFunc {
