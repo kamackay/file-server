@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/gzip"
@@ -8,8 +9,10 @@ import (
 	"github.com/gin-gonic/gin/render"
 	"github.com/robfig/cron/v3"
 	"github.com/sirupsen/logrus"
+	"github.com/xfrr/goffmpeg/models"
 	"gitlab.com/kamackay/filer/auth"
 	"gitlab.com/kamackay/filer/compresssion"
+	"gitlab.com/kamackay/filer/convert"
 	"gitlab.com/kamackay/filer/files"
 	"gitlab.com/kamackay/filer/utils"
 	"gopkg.in/yaml.v2"
@@ -113,18 +116,18 @@ func (this *Server) Start() {
 						ctx.Header("type", "folder")
 						ctx.JSON(200, paths)
 					}
-				//} else if this.auth.IsFolderReq(ctx) {
-				//	// Just send metadata headers
-				//	meta, err := files.ReadMetaFile(filename)
-				//	if err != nil {
-				//		this.unknownError(ctx, err)
-				//	} else {
-				//		ctx.Header("type", "file")
-				//		ctx.Render(http.StatusOK, render.Data{
-				//			ContentType: meta.ContentType,
-				//			Data:        make([]byte, 0),
-				//		})
-				//	}
+					//} else if this.auth.IsFolderReq(ctx) {
+					//	// Just send metadata headers
+					//	meta, err := files.ReadMetaFile(filename)
+					//	if err != nil {
+					//		this.unknownError(ctx, err)
+					//	} else {
+					//		ctx.Header("type", "file")
+					//		ctx.Render(http.StatusOK, render.Data{
+					//			ContentType: meta.ContentType,
+					//			Data:        make([]byte, 0),
+					//		})
+					//	}
 				} else {
 					this.sendFile(ctx, filename)
 				}
@@ -228,6 +231,27 @@ func determineFileSize(meta *files.MetaData, file *os.File) int64 {
 func (this *Server) postFile() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		switch ctx.ContentType() {
+		case "file/convert":
+			var request convert.Request
+			if data, err := ctx.GetRawData(); err != nil {
+				ctx.String(http.StatusInternalServerError, "Unable to read Data")
+			} else if err = json.Unmarshal(data, &request); err != nil {
+				ctx.String(http.StatusInternalServerError,
+					"Error Converting into JSON")
+			} else {
+				err = convert.New().Convert(request.InputFile, request.OutputFile,
+					func(progress models.Progress) {
+						this.log.Infof("progress - %f", progress.Progress)
+					})
+				if err != nil {
+					ctx.String(http.StatusInternalServerError,
+						"Error During Conversion")
+					this.log.Error(err)
+				} else {
+					ctx.String(http.StatusOK, "Converted!")
+				}
+			}
+			return
 		case "text/plain":
 			if data, err := ctx.GetRawData(); err != nil {
 				ctx.String(500, "Unable to read URL")

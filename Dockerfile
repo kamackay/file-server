@@ -30,6 +30,14 @@ RUN yarn build
 
 FROM registry.access.redhat.com/ubi8:latest
 
+RUN yum update -y && \
+    yum install -y gcc git make diffutils && \
+    git clone https://git.ffmpeg.org/ffmpeg.git /ffmpeg && cd /ffmpeg && \
+    ./configure --disable-x86asm && \
+    make && make install && \
+    cd / && rm -rf /ffmpeg && \
+    yum remove -y gcc git make diffutils
+
 WORKDIR /temp
 # To create the temp folder inside of the image
 
