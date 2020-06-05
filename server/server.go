@@ -18,11 +18,9 @@ import (
 	"gopkg.in/yaml.v2"
 	"io"
 	"io/ioutil"
-	"mime"
 	"net/http"
 	"os"
 	"path"
-	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -62,7 +60,7 @@ func New(root string) *Server {
 func (this *Server) Start() {
 	//this.store = persistence.NewInMemoryStore(CacheTime)
 	this.engine.Use(this.auth.Bind())
-	this.engine.Use(this.comp.Bind())
+	//this.engine.Use(this.comp.Bind())
 	this.engine.Use(gzip.Gzip(gzip.BestCompression))
 	this.engine.Use(cors.Default())
 
@@ -232,6 +230,7 @@ func (this *Server) postFile() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		switch ctx.ContentType() {
 		case "file/convert":
+			this.log.Info("Request to Do Conversion")
 			var request convert.Request
 			if data, err := ctx.GetRawData(); err != nil {
 				ctx.String(http.StatusInternalServerError, "Unable to read Data")
@@ -239,16 +238,19 @@ func (this *Server) postFile() gin.HandlerFunc {
 				ctx.String(http.StatusInternalServerError,
 					"Error Converting into JSON")
 			} else {
-				err = convert.New().Convert(request.InputFile, request.OutputFile,
-					func(progress models.Progress) {
-						this.log.Infof("progress - %f", progress.Progress)
-					})
+				err = convert.New(func(progress models.Progress) {
+					this.log.Infof("progress - %f", progress.Progress)
+				}).Convert(this.root+ctx.Request.URL.Path, this.root+request.OutputFile)
 				if err != nil {
 					ctx.String(http.StatusInternalServerError,
 						"Error During Conversion")
 					this.log.Error(err)
 				} else {
-					ctx.String(http.StatusOK, "Converted!")
+					if err := files.WriteMetaFileFor(request.OutputFile); err != nil {
+						this.unknownError(ctx, err)
+					} else {
+						ctx.String(http.StatusOK, "Converted!")
+					}
 				}
 			}
 			return
@@ -313,7 +315,7 @@ func (this *Server) uploadFile() gin.HandlerFunc {
 					break
 				}
 				err = files.WriteFile(files.MetaData{
-					ContentType: mime.TypeByExtension(filepath.Ext(mimePart.FileName())),
+					ContentType: files.GuessFileType(mimePart.FileName()),
 					LastUpdated: time.Now().UnixNano(),
 					Name:        filename,
 					Protected:   false,

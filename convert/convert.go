@@ -1,20 +1,22 @@
 package convert
 
 import (
+	"fmt"
 	"github.com/xfrr/goffmpeg/models"
 	"github.com/xfrr/goffmpeg/transcoder"
 )
 
 type Converter struct {
+	progressUpdate func(progress models.Progress)
 }
 
-func New() *Converter {
-	return &Converter{}
+func New(progressUpdate func(progress models.Progress)) *Converter {
+	return &Converter{
+		progressUpdate: progressUpdate,
+	}
 }
 
-func (this *Converter) Convert(input string,
-	output string,
-	progressUpdate func(progress models.Progress)) error {
+func (this *Converter) Convert(input string, output string) error {
 
 	trans := new(transcoder.Transcoder)
 
@@ -28,7 +30,8 @@ func (this *Converter) Convert(input string,
 	progress := trans.Output()
 
 	for msg := range progress {
-		progressUpdate(msg)
+		this.progressUpdate(msg)
+		fmt.Println("Progress Update Received")
 	}
 
 	err = <-done
@@ -40,6 +43,5 @@ func (this *Converter) Convert(input string,
 }
 
 type Request struct {
-	InputFile  string `json:"input"`
 	OutputFile string `json:"output"`
 }

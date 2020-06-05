@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi8:latest as go
+FROM fedora:rawhide as go
 
 RUN yum update -y
 
@@ -28,18 +28,23 @@ COPY ./ui/ ./
 
 RUN yarn build
 
-FROM registry.access.redhat.com/ubi8:latest
+FROM fedora:rawhide as stage
 
-RUN yum update -y && \
-    yum install -y gcc git make diffutils && \
-    git clone https://git.ffmpeg.org/ffmpeg.git /ffmpeg && cd /ffmpeg && \
-    ./configure --disable-x86asm && \
-    make && make install && \
-    cd / && rm -rf /ffmpeg && \
-    yum remove -y gcc git make diffutils
+# Install Video Conversion Libraries
+RUN yum update -y
+RUN yum -y install https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm
+RUN yum -y install https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
+RUN yum install -y which ffmpeg
+RUN rm -rf /usr/lib/python3.9
+RUN rm -rf /usr/lib/python3.8
 
-WORKDIR /temp
+# Flatten somewhat
+FROM fedora:rawhide
+
+COPY --from=stage / /
+
 # To create the temp folder inside of the image
+WORKDIR /temp
 
 WORKDIR /files
 

@@ -7,8 +7,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
+	"mime"
 	"net/http"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -79,6 +81,21 @@ func CreateProxy(proxyUrl string, fileUrl string) error {
 			ProxyPath:   proxyUrl,
 		})
 	}
+}
+
+func GuessFileType(filename string) string {
+	return mime.TypeByExtension(filepath.Ext(filename))
+}
+
+func WriteMetaFileFor(filename string) error {
+	return writeMetaFile(MetaData{
+		Name:        filename,
+		ContentType: GuessFileType(filename),
+		LastUpdated: time.Now().UnixNano(),
+		Protected:   false,
+		Size:        GetSize(filename),
+		ProxyPath:   "",
+	})
 }
 
 func writeMetaFile(file MetaData) error {

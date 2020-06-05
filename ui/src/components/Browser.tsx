@@ -53,7 +53,10 @@ export default withRouter(
 
     public render() {
       const { contents } = this.state;
-      return !!contents ? <this.renderContents /> : <Loader />;
+      return (<div>
+        <this.renderBreadcrumb />
+        {!!contents ? <this.renderContents /> : <Loader />}
+      </div>);
     }
 
     private loadData = () => {
@@ -132,7 +135,6 @@ export default withRouter(
       //const contents = this.state.contents as string;
       return (
         <div>
-          <this.renderBreadcrumb />
           <a href={this.state.pathname}>Open Raw</a>
           <div style={{ display: "block" }}>
             <iframe
@@ -150,7 +152,6 @@ export default withRouter(
       const { pathname } = this.state;
       return (
         <div>
-          <this.renderBreadcrumb />
           <div style={{ display: "block" }}>
             {contents!.map((file, x) => {
               return (

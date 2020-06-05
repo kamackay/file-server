@@ -38,7 +38,7 @@ func New(fsRoot string) *Authorizer {
 func (this *Authorizer) Bind() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		fsPath := this.fsRoot + ctx.Request.URL.Path
-		if fi, err := os.Stat(fsPath); err == nil && fi.IsDir() {
+		if fi, err := os.Stat(fsPath); err == nil && fi.IsDir() && ctx.Request.Method == http.MethodGet {
 			// This is a directory
 			ctx.Next()
 		} else {
