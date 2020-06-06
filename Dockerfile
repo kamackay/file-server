@@ -31,17 +31,14 @@ RUN yarn build
 FROM fedora:rawhide as stage
 
 # Install Video Conversion Libraries
-RUN yum update -y
-RUN yum -y install https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm
-RUN yum -y install https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
-RUN yum install -y which ffmpeg
-RUN rm -rf /usr/lib/python3.9
-RUN rm -rf /usr/lib/python3.8
-
-# Flatten somewhat
-FROM fedora:rawhide
-
-COPY --from=stage / /
+RUN yum update -y && \
+    yum -y install https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm && \
+    yum -y install https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm && \
+    yum install -y which ffmpeg && \
+    rm -rf /usr/lib/python3.9 && \
+    rm -rf /usr/lib/python3.8 && \
+    rm -rf /usr/lib/bin64 && \
+    rm -rf /var/cache
 
 # To create the temp folder inside of the image
 WORKDIR /temp

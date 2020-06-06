@@ -238,15 +238,17 @@ func (this *Server) postFile() gin.HandlerFunc {
 				ctx.String(http.StatusInternalServerError,
 					"Error Converting into JSON")
 			} else {
+				inputFile := this.root+ctx.Request.URL.Path
+				outputFile := this.root+request.OutputFile
 				err = convert.New(func(progress models.Progress) {
 					this.log.Infof("progress - %f", progress.Progress)
-				}).Convert(this.root+ctx.Request.URL.Path, this.root+request.OutputFile)
+				}).Convert(inputFile, outputFile)
 				if err != nil {
 					ctx.String(http.StatusInternalServerError,
 						"Error During Conversion")
 					this.log.Error(err)
 				} else {
-					if err := files.WriteMetaFileFor(request.OutputFile); err != nil {
+					if err := files.WriteMetaFileFor(outputFile); err != nil {
 						this.unknownError(ctx, err)
 					} else {
 						ctx.String(http.StatusOK, "Converted!")

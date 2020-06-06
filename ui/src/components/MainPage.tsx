@@ -3,7 +3,6 @@ import { Button, Col, Form, Input, Row, Tabs } from "antd";
 import Cookies from "js-cookie";
 import React from "react";
 import { RouteComponentProps, withRouter } from "react-router-dom";
-
 import CreateProxyForm from "./CreateProxyForm";
 import FileUploadForm from "./FileUploadForm";
 import UrlUploadForm from "./UrlUploadForm";
@@ -27,10 +26,15 @@ export default withRouter(
       event: React.ChangeEvent<HTMLInputElement>
     ) => {
       const value = event.target.value;
-      this.setState((prev) => ({
-        ...prev,
-        creds: { ...prev.creds, [key]: value },
-      }));
+      this.setState(
+        (prev) => ({
+          ...prev,
+          creds: { ...prev.creds, [key]: value },
+        }),
+        () => {
+          Cookies.set(`creds`, this.state.creds);
+        }
+      );
     };
 
     public render() {
@@ -40,10 +44,6 @@ export default withRouter(
           <h3>Use this page to upload files to the Static File Server</h3>
 
           <Form
-            onFinish={(values: Creds) => {
-              Cookies.set(`creds`, values);
-              this.setState((prev) => ({ ...prev, creds: values }));
-            }}
             initialValues={this.state.creds}
             style={{ textAlign: "center" }}
           >
@@ -106,6 +106,11 @@ export default withRouter(
             <Tabs.TabPane
               tab="Proxy"
               key="proxy"
+              children={<CreateProxyForm creds={this.state.creds} />}
+            />
+            <Tabs.TabPane
+              tab="Convert"
+              key="convert"
               children={<CreateProxyForm creds={this.state.creds} />}
             />
           </Tabs>
