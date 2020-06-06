@@ -3,6 +3,7 @@ import { Button, Col, Form, Input, Row, Tabs } from "antd";
 import Cookies from "js-cookie";
 import React from "react";
 import { RouteComponentProps, withRouter } from "react-router-dom";
+import ConvertForm from "./ConvertForm";
 import CreateProxyForm from "./CreateProxyForm";
 import FileUploadForm from "./FileUploadForm";
 import UrlUploadForm from "./UrlUploadForm";
@@ -111,7 +112,7 @@ export default withRouter(
             <Tabs.TabPane
               tab="Convert"
               key="convert"
-              children={<CreateProxyForm creds={this.state.creds} />}
+              children={<ConvertForm creds={this.state.creds} />}
             />
           </Tabs>
         </div>
