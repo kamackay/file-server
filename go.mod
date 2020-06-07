@@ -7,6 +7,8 @@ require (
 	github.com/gin-contrib/cors v1.3.1
 	github.com/gin-contrib/gzip v0.0.1
 	github.com/gin-gonic/gin v1.6.2
+	github.com/google/uuid v1.1.1
+	github.com/kamackay/goffmpeg v0.5.1
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/sirupsen/logrus v1.4.2
 	github.com/xfrr/goffmpeg v0.0.0-20200403115021-c3a1545b29f4

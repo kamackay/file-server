@@ -43,6 +43,9 @@ spec:
       restartPolicy: Always
       containers:
         - name: server
+          resources:
+            limits:
+              cpu: "1000m"
           image: registry.gitlab.com/kamackay/filer:latest
           imagePullPolicy: Always
           readinessProbe:
@@ -52,6 +55,7 @@ spec:
             initialDelaySeconds: 0
             timeoutSeconds: 1
             periodSeconds: 10
+            failureThreshold: 6
           env:
             - name: PORT
               value: "8080"
@@ -121,4 +125,3 @@ spec:
               serviceName: file-server
               servicePort: 8080
 ---
-

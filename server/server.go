@@ -7,9 +7,9 @@ import (
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/render"
+	"github.com/kamackay/goffmpeg/models"
 	"github.com/robfig/cron/v3"
 	"github.com/sirupsen/logrus"
-	"github.com/xfrr/goffmpeg/models"
 	"gitlab.com/kamackay/filer/auth"
 	"gitlab.com/kamackay/filer/compresssion"
 	"gitlab.com/kamackay/filer/convert"
@@ -39,6 +39,7 @@ type Server struct {
 	auth       *auth.Authorizer
 	comp       *compresssion.Compressor
 	config     Config
+	converter  *convert.Converter
 }
 
 func New(root string) *Server {
@@ -54,6 +55,9 @@ func New(root string) *Server {
 		cronRunner: cron.New(),
 		auth:       auth.New(root),
 		comp:       compresssion.New(),
+		converter: convert.New(func(progress models.Progress, job convert.Job) {
+			log.Infof("Progress on Job %s - %f", job.Id.String(), progress.Progress)
+		}),
 	}).readConfig()
 }
 
@@ -229,32 +233,20 @@ func determineFileSize(meta *files.MetaData, file *os.File) int64 {
 func (this *Server) postFile() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		switch ctx.ContentType() {
-		case "file/convert":
-			this.log.Info("Request to Do Conversion")
-			var request convert.Request
+		case "job/progress":
 			if data, err := ctx.GetRawData(); err != nil {
-				ctx.String(http.StatusInternalServerError, "Unable to read Data")
-			} else if err = json.Unmarshal(data, &request); err != nil {
-				ctx.String(http.StatusInternalServerError,
-					"Error Converting into JSON")
+				ctx.String(500, "Unable to read JobId")
 			} else {
-				inputFile := this.root+ctx.Request.URL.Path
-				outputFile := this.root+request.OutputFile
-				err = convert.New(func(progress models.Progress) {
-					this.log.Infof("progress - %f", progress.Progress)
-				}).Convert(inputFile, outputFile)
-				if err != nil {
-					ctx.String(http.StatusInternalServerError,
-						"Error During Conversion")
-					this.log.Error(err)
+				job := this.converter.GetJobStr(string(data))
+				if job != nil {
+					ctx.JSON(http.StatusOK, job)
 				} else {
-					if err := files.WriteMetaFileFor(outputFile); err != nil {
-						this.unknownError(ctx, err)
-					} else {
-						ctx.String(http.StatusOK, "Converted!")
-					}
+					ctx.String(http.StatusNotFound, "Could not find Job with ID %s", string(data))
 				}
 			}
+			return
+		case "file/convert":
+			this.runConversion(ctx)
 			return
 		case "text/plain":
 			if data, err := ctx.GetRawData(); err != nil {
@@ -281,6 +273,24 @@ func (this *Server) postFile() gin.HandlerFunc {
 		default:
 			ctx.String(400, "Unsure how to use Request")
 		}
+	}
+}
+
+func (this *Server) runConversion(ctx *gin.Context) {
+	this.log.Info("Request to Do Conversion")
+	var request convert.Request
+	if data, err := ctx.GetRawData(); err != nil {
+		ctx.String(http.StatusInternalServerError, "Unable to read Data")
+	} else if err = json.Unmarshal(data, &request); err != nil {
+		ctx.String(http.StatusInternalServerError,
+			"Error Converting into JSON")
+	} else {
+		inputFile := this.root + ctx.Request.URL.Path
+		outputFile := this.root + request.OutputFile
+		jobId := this.converter.Convert(inputFile, outputFile)
+		ctx.JSON(http.StatusOK, gin.H{
+			"job": jobId,
+		})
 	}
 }
 

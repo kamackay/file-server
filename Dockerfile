@@ -1,11 +1,12 @@
-FROM fedora:rawhide as go
+FROM ubuntu:latest as go
 
-RUN yum update -y
+ENV DEBIAN_FRONTEND noninteractive
 
 WORKDIR /app/
 WORKDIR $GOPATH/src/gitlab.com/kamackay/filer
 
-RUN yum install -y golang git
+RUN apt-get update && apt-get upgrade -y && \
+    apt-get install -y git apt-utils golang-go
 
 ADD ./go.mod ./
 
@@ -28,17 +29,13 @@ COPY ./ui/ ./
 
 RUN yarn build
 
-FROM fedora:rawhide as stage
+FROM ubuntu:latest as stage
+
+ENV DEBIAN_FRONTEND noninteractive
 
 # Install Video Conversion Libraries
-RUN yum update -y && \
-    yum -y install https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm && \
-    yum -y install https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm && \
-    yum install -y which ffmpeg && \
-    rm -rf /usr/lib/python3.9 && \
-    rm -rf /usr/lib/python3.8 && \
-    rm -rf /usr/lib/bin64 && \
-    rm -rf /var/cache
+RUN apt-get update && apt-get upgrade -y && \
+    apt-get install -y ffmpeg apt-utils
 
 # To create the temp folder inside of the image
 WORKDIR /temp
