@@ -1,5 +1,5 @@
 import { UploadOutlined } from "@ant-design/icons";
-import { Button, Col, Form, Input, Row } from "antd";
+import { Button, Col, Form, Input, Progress, Row } from "antd";
 import axios from "axios";
 import React from "react";
 import { toast } from "react-toastify";
@@ -13,6 +13,7 @@ interface State {
   url: string;
   uploadUrl: string;
   loading: boolean;
+  job?: ConversionJob;
 }
 
 export default class ConvertForm extends React.Component<Props, State> {
@@ -30,7 +31,7 @@ export default class ConvertForm extends React.Component<Props, State> {
   }
 
   public render() {
-    const { url, uploadUrl, loading } = this.state;
+    const { url, uploadUrl, loading, job } = this.state;
     const { creds } = this.props;
     return (
       <Form
@@ -105,6 +106,18 @@ export default class ConvertForm extends React.Component<Props, State> {
         </Form.Item>
 
         <Form.Item>
+          {!!job && (
+            <div style={{ margin: 5, padding: 5 }}>
+              <Progress
+                strokeColor={{
+                  from: "#108ee9",
+                  to: "#87d068",
+                }}
+                percent={job.progress}
+                status="active"
+              />
+            </div>
+          )}
           <Button loading={loading} type="primary" htmlType="submit">
             <UploadOutlined /> Convert
           </Button>
@@ -123,16 +136,20 @@ export default class ConvertForm extends React.Component<Props, State> {
       })
       .then((r) => r.data)
       .then((data: ConversionJob) => {
-        console.log(data);
+        this.setState((prev) => ({ ...prev, job: data }));
         if (data.status !== 0 && this.state.loading) {
-          this.setState((prev) => ({ ...prev, loading: false }));
+          this.setState((prev) => ({
+            ...prev,
+            loading: false,
+            job: undefined,
+          }));
           if (data.status === 1) {
             toast(`Could not Convert URL`, { type: "error" });
           } else if (data.status === 2) {
             toast(`Successfully Converted`, { type: "success" });
           }
         } else {
-          this.checkOnJob(job);
+          setTimeout(() => this.checkOnJob(job), 100);
         }
       })
       .catch((err) => {

@@ -5,6 +5,7 @@ import (
 	"github.com/kamackay/goffmpeg/models"
 	"github.com/kamackay/goffmpeg/transcoder"
 	"github.com/sirupsen/logrus"
+	"gitlab.com/kamackay/filer/files"
 )
 
 const (
@@ -76,6 +77,10 @@ func (this *Converter) Convert(input string, output string) uuid.UUID {
 		if err != nil {
 			this.updateJob(jobId, 0, Failed, err)
 		} else {
+			err = files.WriteMetaFileFor(output)
+			if err != nil {
+				this.log.Warnf("Error Writing Metadata for Converted File: %s", err)
+			}
 			this.updateJob(jobId, 100, Done, nil)
 		}
 	}()
