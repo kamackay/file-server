@@ -1,7 +1,7 @@
-import React from "react";
-import axios from "axios";
 import { UploadOutlined } from "@ant-design/icons";
-import { Row, Form, Col, Input, Button } from "antd";
+import { Button, Col, Form, Input, Row } from "antd";
+import axios from "axios";
+import React from "react";
 import { toast } from "react-toastify";
 import { makeAuthHeader } from "../utils/utils";
 
@@ -31,7 +31,7 @@ export default (props: { creds?: Creds }) => {
     >
       <h3>Upload a Remote File</h3>
       <h5>
-        The Server will download the proxided URL to it's filesystem and it will
+        The Server will download the proxided URL to its filesystem and it will
         be available as a regular file
       </h5>
 
