@@ -1,5 +1,14 @@
 import { UploadOutlined } from "@ant-design/icons";
-import { Button, Col, Form, Input, Progress, Row, Select } from "antd";
+import {
+  Button,
+  Col,
+  Form,
+  Input,
+  InputNumber,
+  Progress,
+  Row,
+  Select,
+} from "antd";
 import axios from "axios";
 import React from "react";
 import { toast } from "react-toastify";
@@ -27,6 +36,7 @@ interface State {
   loading: boolean;
   job?: ConversionJob;
   preset: Preset;
+  crf: number;
 }
 
 export default class ConvertForm extends React.Component<Props, State> {
@@ -37,6 +47,7 @@ export default class ConvertForm extends React.Component<Props, State> {
       uploadUrl: "/",
       loading: false,
       preset: Preset.veryfast,
+      crf: 19,
     };
   }
 
@@ -45,7 +56,7 @@ export default class ConvertForm extends React.Component<Props, State> {
   }
 
   public render() {
-    const { url, uploadUrl, loading, job, preset } = this.state;
+    const { url, uploadUrl, loading, job, preset, crf } = this.state;
     const { creds } = this.props;
     return (
       <Form
@@ -54,7 +65,7 @@ export default class ConvertForm extends React.Component<Props, State> {
           axios
             .post(
               values.filePath,
-              { output: values.url, preset: "veryslow" },
+              { output: values.url, preset: "veryslow", crf },
               {
                 headers: {
                   "Content-Type": `file/convert`,
@@ -117,7 +128,7 @@ export default class ConvertForm extends React.Component<Props, State> {
                 </Form.Item>
 
                 <Form.Item
-                  name={["preset"]}
+                  name="preset"
                   label="Preset"
                   initialValue={preset}
                   rules={[{ required: true, message: "Preset is required" }]}
@@ -140,6 +151,20 @@ export default class ConvertForm extends React.Component<Props, State> {
                     ))}
                   </Select>
                 </Form.Item>
+
+                <Form.Item
+                  name="crf"
+                  initialValue={crf}
+                  label="Constant Rate Factor"
+                >
+                  <InputNumber
+                    max={51}
+                    min={0}
+                    onChange={(val) =>
+                      this.setState((prev) => ({ ...prev, crf: val as number }))
+                    }
+                  />
+                </Form.Item>
               </>
             }
           />
@@ -154,7 +179,7 @@ export default class ConvertForm extends React.Component<Props, State> {
                   from: "#108ee9",
                   to: "#87d068",
                 }}
-                percent={job.progress}
+                percent={Math.round(job.progress * 10) / 10}
                 status="active"
               />
             </div>

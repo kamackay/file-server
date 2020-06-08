@@ -67,7 +67,7 @@ func (this *Converter) Convert(input string, request Request) uuid.UUID {
 
 		trans.MediaFile().SetPreset(request.Preset)
 		trans.MediaFile().SetThreads(1)
-		trans.MediaFile().SetCRF(10)
+		trans.MediaFile().SetCRF(request.CRF)
 		//trans.MediaFile().SetBufferSize(200000)
 
 		done := trans.Run(true)
@@ -127,4 +127,5 @@ func (this *Converter) updateJob(id uuid.UUID, progress float64, status int, err
 type Request struct {
 	OutputFile string `json:"output"`
 	Preset     string `json:"preset"`
+	CRF        uint32 `json:"crf"`
 }
