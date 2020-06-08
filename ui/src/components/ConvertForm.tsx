@@ -6,10 +6,14 @@ import { toast } from "react-toastify";
 import { makeAuthHeader } from "../utils/utils";
 
 enum Preset {
+  ultrafast = "ultrafast",
+  superfast = "superfast",
   veryfast = "veryfast",
+  faster = "faster",
   fast = "fast",
   medium = "medium",
   slow = "slow",
+  slower = "slower",
   veryslow = "veryslow",
 }
 
