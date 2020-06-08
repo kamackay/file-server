@@ -45,6 +45,7 @@ spec:
         - name: server
           resources:
             limits:
+              memory: "750Mi"
               cpu: "1000m"
           image: registry.gitlab.com/kamackay/filer:latest
           imagePullPolicy: Always

@@ -11,6 +11,6 @@ require (
 	github.com/kamackay/goffmpeg v0.5.1
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/sirupsen/logrus v1.4.2
-	github.com/xfrr/goffmpeg v0.0.0-20200403115021-c3a1545b29f4
+	//github.com/xfrr/goffmpeg v0.0.0-20200403115021-c3a1545b29f4
 	gopkg.in/yaml.v2 v2.3.0
 )

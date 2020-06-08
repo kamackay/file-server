@@ -44,24 +44,25 @@ func New(progressUpdate ProgressFunc) *Converter {
 	}
 }
 
-func (this *Converter) Convert(input string, output string) uuid.UUID {
+func (this *Converter) Convert(input string, request Request) uuid.UUID {
 	jobId := uuid.New()
 	this.jobs[jobId] = Job{
 		Id:         jobId,
 		InputFile:  input,
-		OutputFile: output,
+		OutputFile: request.OutputFile,
 		Status:     InProgress,
 	}
 	go func() {
 		trans := new(transcoder.Transcoder)
 
-		err := trans.Initialize(input, output)
+		err := trans.Initialize(input, request.OutputFile)
 		if err != nil {
 			this.updateJob(jobId, 100, Failed, err)
 		}
 
-		trans.MediaFile().SetPreset("veryfast")
-		trans.MediaFile().SetThreads(2)
+		trans.MediaFile().SetPreset(request.Preset)
+		trans.MediaFile().SetThreads(1)
+		trans.MediaFile().SetCRF(10)
 		//trans.MediaFile().SetBufferSize(200000)
 
 		done := trans.Run(true)
@@ -77,7 +78,7 @@ func (this *Converter) Convert(input string, output string) uuid.UUID {
 		if err != nil {
 			this.updateJob(jobId, 0, Failed, err)
 		} else {
-			err = files.WriteMetaFileFor(output)
+			err = files.WriteMetaFileFor(request.OutputFile)
 			if err != nil {
 				this.log.Warnf("Error Writing Metadata for Converted File: %s", err)
 			}
@@ -119,4 +120,5 @@ func (this *Converter) updateJob(id uuid.UUID, progress float64, status int, err
 
 type Request struct {
 	OutputFile string `json:"output"`
+	Preset     string `json:"preset"`
 }

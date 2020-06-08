@@ -1,9 +1,17 @@
 import { UploadOutlined } from "@ant-design/icons";
-import { Button, Col, Form, Input, Progress, Row } from "antd";
+import { Button, Col, Form, Input, Progress, Row, Select } from "antd";
 import axios from "axios";
 import React from "react";
 import { toast } from "react-toastify";
 import { makeAuthHeader } from "../utils/utils";
+
+enum Preset {
+  veryfast = "veryfast",
+  fast = "fast",
+  medium = "medium",
+  slow = "slow",
+  veryslow = "veryslow",
+}
 
 interface Props {
   creds?: Creds;
@@ -14,6 +22,7 @@ interface State {
   uploadUrl: string;
   loading: boolean;
   job?: ConversionJob;
+  preset: Preset;
 }
 
 export default class ConvertForm extends React.Component<Props, State> {
@@ -23,6 +32,7 @@ export default class ConvertForm extends React.Component<Props, State> {
       url: "/",
       uploadUrl: "/",
       loading: false,
+      preset: Preset.veryfast,
     };
   }
 
@@ -31,7 +41,7 @@ export default class ConvertForm extends React.Component<Props, State> {
   }
 
   public render() {
-    const { url, uploadUrl, loading, job } = this.state;
+    const { url, uploadUrl, loading, job, preset } = this.state;
     const { creds } = this.props;
     return (
       <Form
@@ -40,7 +50,7 @@ export default class ConvertForm extends React.Component<Props, State> {
           axios
             .post(
               values.filePath,
-              { output: values.url },
+              { output: values.url, preset: "veryslow" },
               {
                 headers: {
                   "Content-Type": `file/convert`,
@@ -71,39 +81,66 @@ export default class ConvertForm extends React.Component<Props, State> {
           <Col
             span={12}
             children={
-              <Form.Item
-                label="Input Path"
-                name="filePath"
-                initialValue={url}
-                rules={[{ required: true, message: "Please Input A Path!" }]}
-              >
-                <Input
-                  value={url}
-                  onChange={(e) => {
-                    const url = e.target.value;
-                    this.setState((prev) => ({ ...prev, url }));
-                  }}
-                />
-              </Form.Item>
+              <>
+                <Form.Item
+                  label="Input Path"
+                  name="filePath"
+                  initialValue={url}
+                  rules={[{ required: true, message: "Please Input A Path!" }]}
+                >
+                  <Input
+                    value={url}
+                    onChange={(e) => {
+                      const url = e.target.value;
+                      this.setState((prev) => ({ ...prev, url }));
+                    }}
+                  />
+                </Form.Item>
+
+                <Form.Item
+                  label="Output Path"
+                  name="url"
+                  initialValue={uploadUrl}
+                  rules={[{ required: true, message: "Please input A Path!" }]}
+                >
+                  <Input
+                    value={uploadUrl}
+                    onChange={(e) => {
+                      const uploadUrl = e.target.value;
+                      this.setState((prev) => ({ ...prev, uploadUrl }));
+                    }}
+                  />
+                </Form.Item>
+
+                <Form.Item
+                  name={["preset"]}
+                  label="Preset"
+                  initialValue={preset}
+                  rules={[{ required: true, message: "Preset is required" }]}
+                >
+                  <Select
+                    placeholder="Preset"
+                    onChange={(value, option) => {
+                      this.setState((prev) => ({
+                        ...prev,
+                        preset: value.toString() as Preset,
+                      }));
+                    }}
+                  >
+                    {Object.keys(Preset).map((preset) => (
+                      <Select.Option
+                        key={`preset-${preset}`}
+                        value={preset}
+                        children={preset}
+                      />
+                    ))}
+                  </Select>
+                </Form.Item>
+              </>
             }
           />
           <Col span={6} />
         </Row>
-
-        <Form.Item
-          label="Output Path"
-          name="url"
-          initialValue={uploadUrl}
-          rules={[{ required: true, message: "Please input A Path!" }]}
-        >
-          <Input
-            value={uploadUrl}
-            onChange={(e) => {
-              const uploadUrl = e.target.value;
-              this.setState((prev) => ({ ...prev, uploadUrl }));
-            }}
-          />
-        </Form.Item>
 
         <Form.Item>
           {!!job && (
@@ -128,7 +165,7 @@ export default class ConvertForm extends React.Component<Props, State> {
 
   private checkOnJob = (job: string) => {
     axios
-      .post(`/`, `${job}`, {
+      .post(`/${job}`, ``, {
         headers: {
           "Content-Type": `job/progress`,
           ...makeAuthHeader(this.props.creds),
@@ -149,7 +186,7 @@ export default class ConvertForm extends React.Component<Props, State> {
             toast(`Successfully Converted`, { type: "success" });
           }
         } else {
-          setTimeout(() => this.checkOnJob(job), 100);
+          setTimeout(() => this.checkOnJob(job), 200);
         }
       })
       .catch((err) => {

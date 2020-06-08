@@ -234,15 +234,12 @@ func (this *Server) postFile() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		switch ctx.ContentType() {
 		case "job/progress":
-			if data, err := ctx.GetRawData(); err != nil {
-				ctx.String(500, "Unable to read JobId")
+			jobId := regexp.MustCompile("^/").ReplaceAllString(ctx.Request.URL.Path, "")
+			job := this.converter.GetJobStr(jobId)
+			if job != nil {
+				ctx.JSON(http.StatusOK, job)
 			} else {
-				job := this.converter.GetJobStr(string(data))
-				if job != nil {
-					ctx.JSON(http.StatusOK, job)
-				} else {
-					ctx.String(http.StatusNotFound, "Could not find Job with ID %s", string(data))
-				}
+				ctx.String(http.StatusNotFound, "Could not find Job with ID %s", jobId)
 			}
 			return
 		case "file/convert":
@@ -286,8 +283,8 @@ func (this *Server) runConversion(ctx *gin.Context) {
 			"Error Converting into JSON")
 	} else {
 		inputFile := this.root + ctx.Request.URL.Path
-		outputFile := this.root + request.OutputFile
-		jobId := this.converter.Convert(inputFile, outputFile)
+		request.OutputFile = this.root + request.OutputFile
+		jobId := this.converter.Convert(inputFile, request)
 		ctx.JSON(http.StatusOK, gin.H{
 			"job": jobId,
 		})
