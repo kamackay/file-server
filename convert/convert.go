@@ -6,6 +6,7 @@ import (
 	"github.com/kamackay/goffmpeg/transcoder"
 	"github.com/sirupsen/logrus"
 	"gitlab.com/kamackay/filer/files"
+	"time"
 )
 
 const (
@@ -24,7 +25,9 @@ type Converter struct {
 
 type Job struct {
 	Id         uuid.UUID `json:"id"`
+	StartTime  int64     `json:"startTime"`
 	InputFile  string    `json:"inputFile"`
+	Duration   int64     `json:"duration"`
 	OutputFile string    `json:"outputFile"`
 	Status     int       `json:"status"`
 	Progress   float64   `json:"progress"`
@@ -48,6 +51,8 @@ func (this *Converter) Convert(input string, request Request) uuid.UUID {
 	jobId := uuid.New()
 	this.jobs[jobId] = Job{
 		Id:         jobId,
+		StartTime:  time.Now().UnixNano(),
+		Duration:   0,
 		InputFile:  input,
 		OutputFile: request.OutputFile,
 		Status:     InProgress,
@@ -106,6 +111,7 @@ func (this *Converter) MustGetJob(id uuid.UUID) Job {
 
 func (this *Converter) updateJob(id uuid.UUID, progress float64, status int, err error) {
 	job := this.jobs[id]
+	job.Duration = time.Now().UnixNano() - job.StartTime
 	if err != nil || status == Failed {
 		this.log.Warnf("Job %s Has Failed %s", id.String(), err)
 		job.Status = Failed
