@@ -15,7 +15,7 @@ RUN go mod download && \
 
 COPY ./ ./
 
-RUN go build -o application.file ./*.go && cp ./application.file /app/
+RUN go build -o application.file ./index.go && cp ./application.file /app/
 
 FROM node:alpine as react
 
