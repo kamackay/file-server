@@ -4,4 +4,6 @@ declare interface FilerFile {
   lastUpdated: number;
   folder: boolean;
   protected: boolean;
+  size: number;
+  count: number;
 }

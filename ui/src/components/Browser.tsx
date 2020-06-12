@@ -1,17 +1,15 @@
-import "promise-peek";
-
 import {
-  HomeOutlined as HomeIcon,
   FolderOutlined as RootIcon,
+  HomeOutlined as HomeIcon,
 } from "@ant-design/icons";
 import { Breadcrumb } from "antd";
 import Axios from "axios";
+import "promise-peek";
 import React from "react";
 import { Link, RouteComponentProps, withRouter } from "react-router-dom";
 import { BarLoader as Loader } from "react-spinners";
 import { toast } from "react-toastify";
 import urljoin from "url-join";
-
 import { BROWSE_PATH } from "../constants";
 import FilerFile from "./FilerFile";
 
@@ -53,10 +51,12 @@ export default withRouter(
 
     public render() {
       const { contents } = this.state;
-      return (<div>
-        <this.renderBreadcrumb />
-        {!!contents ? <this.renderContents /> : <Loader />}
-      </div>);
+      return (
+        <div>
+          <this.renderBreadcrumb />
+          {!!contents ? <this.renderContents /> : <Loader />}
+        </div>
+      );
     }
 
     private loadData = () => {

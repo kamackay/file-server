@@ -107,6 +107,8 @@ func (this *Server) Start() {
 										Name:        files.MakeRelative(f.Name()),
 										ContentType: utils.TernaryString(isDir, "folder", "text/plain"),
 										LastUpdated: 0,
+										Count:       files.CountFolderItems(f.Name()),
+										Size:        files.GetFolderSize(f.Name()),
 										Folder:      isDir,
 										Protected:   !this.auth.AllowedToViewFolder(ctx, f.Name()),
 									})
