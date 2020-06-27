@@ -15,7 +15,7 @@ RUN go mod download && \
 
 COPY ./ ./
 
-RUN go build -o application.file ./index.go && cp ./application.file /app/
+RUN go build -tags=jsoniter -o application.file ./index.go && cp ./application.file /app/
 
 FROM node:alpine as react
 
@@ -35,7 +35,7 @@ ENV DEBIAN_FRONTEND noninteractive
 
 # Install Video Conversion Libraries
 RUN apt-get update && apt-get upgrade -y && \
-    apt-get install -y ffmpeg apt-utils
+    apt-get install -y ffmpeg apt-utils ca-certificates vim
 
 # To create the temp folder inside of the image
 WORKDIR /temp
