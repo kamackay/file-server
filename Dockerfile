@@ -35,7 +35,7 @@ ENV DEBIAN_FRONTEND noninteractive
 
 # Install Video Conversion Libraries
 RUN apt-get update && apt-get upgrade -y && \
-    apt-get install -y ffmpeg apt-utils ca-certificates vim
+    apt-get install -y --reinstall ffmpeg apt-utils ca-certificates vim
 
 # To create the temp folder inside of the image
 WORKDIR /temp
@@ -47,5 +47,9 @@ COPY --from=go /app/application.file /server
 COPY --from=react /app/build /ui
 
 COPY ./mime.types /etc
+
+# FROM scratch
+
+# COPY --from=stage / /
 
 CMD /server
