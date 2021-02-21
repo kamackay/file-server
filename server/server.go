@@ -73,7 +73,8 @@ func (this *Server) Start() {
 
 	this.engine.GET("/*root",
 		func(ctx *gin.Context) {
-			filename := this.root + ctx.Request.URL.Path
+			originPath := ctx.Request.URL.Path
+			filename := this.root + originPath
 			urlPath := ctx.Request.URL.Path
 			if urlPath == "/" && !this.auth.IsFolderReq(ctx) {
 				ctx.Redirect(http.StatusTemporaryRedirect, "/ui/")
@@ -133,7 +134,7 @@ func (this *Server) Start() {
 					//		})
 					//	}
 				} else {
-					this.sendFile(ctx, filename)
+					this.sendFile(ctx, filename, originPath)
 				}
 			}
 		})
@@ -166,10 +167,12 @@ func (this *Server) Start() {
 	}
 }
 
-func (this *Server) sendFile(ctx *gin.Context, filename string) {
+func (this *Server) sendFile(ctx *gin.Context, filename string, originPath string) {
 	this.log.Infof("Sending File %s", filename)
 	if handled, file, reader, err := files.GetFile(ctx, filename); err != nil {
 		if os.IsNotExist(err) {
+			// Check for file in static assets
+			this.log.Infof("Looking for %s in public folder", originPath)
 			ctx.String(http.StatusNotFound, "File Not Found")
 		} else {
 			this.unknownError(ctx, err)

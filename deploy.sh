@@ -1,4 +1,4 @@
-IMAGE=registry.gitlab.com/kamackay/filer:$1
+IMAGE=docker.keith.sh/filer:$1
 
 time docker build . -t "$IMAGE" && \
     # docker-squash "$IMAGE" --tag "$IMAGE" && \
