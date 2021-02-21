@@ -73,9 +73,8 @@ func (this *Server) Start() {
 
 	this.engine.GET("/*root",
 		func(ctx *gin.Context) {
-			originPath := ctx.Request.URL.Path
-			filename := this.root + originPath
 			urlPath := ctx.Request.URL.Path
+			filename := this.root + urlPath
 			if urlPath == "/" && !this.auth.IsFolderReq(ctx) {
 				ctx.Redirect(http.StatusTemporaryRedirect, "/ui/")
 			} else if regexp.MustCompile("^/ui/?.*").MatchString(urlPath) {
@@ -134,7 +133,7 @@ func (this *Server) Start() {
 					//		})
 					//	}
 				} else {
-					this.sendFile(ctx, filename, originPath)
+					this.sendFile(ctx, filename, urlPath)
 				}
 			}
 		})
@@ -173,7 +172,11 @@ func (this *Server) sendFile(ctx *gin.Context, filename string, originPath strin
 		if os.IsNotExist(err) {
 			// Check for file in static assets
 			this.log.Infof("Looking for %s in public folder", originPath)
-			ctx.String(http.StatusNotFound, "File Not Found")
+			if files.FileExists("/ui" + originPath) {
+				this.sendFileNoMeta(ctx, "/ui" + originPath, files.GuessFileType("/ui" + originPath))
+			} else {
+				ctx.String(http.StatusNotFound, "File Not Found")
+			}
 		} else {
 			this.unknownError(ctx, err)
 		}

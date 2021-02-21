@@ -48,8 +48,8 @@ COPY --from=react /app/build /ui
 
 COPY ./mime.types /etc
 
- FROM scratch
-
- COPY --from=stage / /
+FROM scratch
+COPY --from=stage / /
+RUN ls -alh /ui/public
 
 CMD /server
