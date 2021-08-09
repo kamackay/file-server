@@ -46,7 +46,8 @@ WORKDIR /files
 
 COPY --from=go /app/application.file /server
 
-COPY --from=react /app/build /ui
+COPY --from=react /app/build /ui/
+COPY --from=react /app/build /ui/public
 
 COPY ./mime.types /etc
 

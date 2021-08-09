@@ -58,7 +58,7 @@ func (this *Authorizer) Validate(ctx *gin.Context) bool {
 	path := ctx.Request.URL.Path
 	if err != nil {
 		if os.IsNotExist(err) {
-			this.log.Debugf("Checking to see if static asset %s exists",
+			this.log.Infof("Checking to see if static asset %s exists",
 				"/ui" + path)
 			if files.FileExists("/ui" + path) {
 				this.log.Infof("Permitting access to %s",
@@ -66,6 +66,7 @@ func (this *Authorizer) Validate(ctx *gin.Context) bool {
 				// Pulling file from static path
 				return true
 			} else {
+				this.log.Warnf("Couldn't Find %s", "/ui" + path)
 				ctx.AbortWithStatus(http.StatusNotFound)
 			}
 		} else {

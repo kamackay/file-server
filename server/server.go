@@ -80,9 +80,10 @@ func (this *Server) Start() {
 			} else if regexp.MustCompile("^/ui/?.*").MatchString(urlPath) {
 				if regexp.MustCompile("^/ui/?$").MatchString(urlPath) {
 					// Send Root UI file
-					this.log.Debugf("Sending index.html for request on %s", urlPath)
-					this.sendFileNoMeta(ctx, "/ui/index.html", "text/html")
+					this.log.Infof("Sending index.html for request on %s", urlPath)
+					this.sendFileNoMeta(ctx, "/ui/public/index.html", "text/html")
 				} else {
+					this.log.Infof("Sending %s from UI assets", urlPath)
 					this.sendFileNoMeta(ctx, urlPath, "text/javascript")
 				}
 			} else if fi, exists, err := this.getFile(filename); err != nil && exists {

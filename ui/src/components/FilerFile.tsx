@@ -1,5 +1,8 @@
-import { LockFilled as Lock } from "@ant-design/icons";
-import { Card } from "antd";
+import {
+  LinkOutlined as LinkIcon,
+  LockFilled as Lock,
+} from "@ant-design/icons";
+import { Button, Card } from "antd";
 import moment from "moment";
 import React from "react";
 import { Link, RouteComponentProps, withRouter } from "react-router-dom";
@@ -18,7 +21,12 @@ export default withRouter(
           </p>
         }
         style={{ display: "inline-block", width: 300, margin: 10 }}
-        extra={<Link to={`${urljoin(path, file.name)}`} children="View" />}
+        extra={
+          <>
+            <Link to={`${urljoin(path, file.name)}`} children="View" />
+            <Button icon={<LinkIcon />} size="middle" />
+          </>
+        }
       >
         <RenderInners file={file} />
       </Card>

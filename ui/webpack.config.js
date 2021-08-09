@@ -6,7 +6,7 @@ module.exports = {
   entry: "./src/index.tsx",
   output: {
     filename: "bundle.js",
-    publicPath: "/public",
+    publicPath: "/public/",
     path: __dirname + "/build", // Put the output in the Springboot static path
   },
 
