@@ -55,9 +55,19 @@ func (this *Authorizer) Bind() gin.HandlerFunc {
 func (this *Authorizer) Validate(ctx *gin.Context) bool {
 	this.log.Infof("Validating Request on `%s`", ctx.Request.URL.Path)
 	requiresValidation, err := this.requiresValidation(ctx)
+	path := ctx.Request.URL.Path
 	if err != nil {
 		if os.IsNotExist(err) {
-			ctx.AbortWithStatus(http.StatusNotFound)
+			this.log.Debugf("Checking to see if static asset %s exists",
+				"/ui" + path)
+			if files.FileExists("/ui" + path) {
+				this.log.Infof("Permitting access to %s",
+					"/ui" + path)
+				// Pulling file from static path
+				return true
+			} else {
+				ctx.AbortWithStatus(http.StatusNotFound)
+			}
 		} else {
 			ctx.AbortWithStatus(http.StatusInternalServerError)
 		}

@@ -1,10 +1,12 @@
 const path = require("path");
 const webpack = require("webpack");
+const CopyWebpackPlugin = require("copy-webpack-plugin");
 
 module.exports = {
   entry: "./src/index.tsx",
   output: {
     filename: "bundle.js",
+    publicPath: "/public",
     path: __dirname + "/build", // Put the output in the Springboot static path
   },
 
@@ -48,6 +50,11 @@ module.exports = {
     new webpack.ProvidePlugin({
       React: "react",
     }),
+    new CopyWebpackPlugin({
+      patterns: [
+        { from: 'public', to: 'public' }
+      ]
+    })
   ],
 
   // When importing a module whose path matches one of the following, just
