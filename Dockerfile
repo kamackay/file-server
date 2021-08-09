@@ -6,7 +6,9 @@ WORKDIR /app/
 WORKDIR $GOPATH/src/gitlab.com/kamackay/filer
 
 RUN apt-get update && apt-get upgrade -y && \
-    apt-get install -y git apt-utils golang-go
+    apt-get install -y software-properties-common && \
+    add-apt-repository -y ppa:longsleep/golang-backports && \
+    apt-get install -y git apt-utils golang-go ca-certificates
 
 ADD ./go.mod ./
 
@@ -21,7 +23,7 @@ FROM node:alpine as react
 
 WORKDIR /app
 
-COPY ./ui/package.json ./
+COPY ./ui/package.json ./ui/yarn.lock ./
 
 RUN yarn
 

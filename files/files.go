@@ -2,6 +2,7 @@ package files
 
 import (
 	"bufio"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
@@ -169,7 +170,11 @@ func ReadMetaFile(filename string) (*MetaData, error) {
 }
 
 func DownloadFile(url string, filename string) error {
-	if resp, err := http.Get(url); err != nil {
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
+	if resp, err := client.Get(url); err != nil {
 		return err
 	} else {
 		defer resp.Body.Close()

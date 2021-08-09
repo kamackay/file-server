@@ -8,9 +8,11 @@ import asyncComponent from "./components/asyncComponent";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { Layout, PageHeader } from "antd";
+import {BROWSE_PATH, WEBM_PATH} from "./constants";
 
 const MainPage = asyncComponent(() => import("./components/MainPage"));
 const Browser = asyncComponent(() => import("./components/Browser"));
+const Viewer = asyncComponent(() => import("./components/Viewer"));
 
 ReactDOM.render(
   <Router history={createHashHistory()}>
@@ -24,7 +26,8 @@ ReactDOM.render(
       >
         <Switch>
           <Route path="/" exact={true} component={MainPage} />
-          <Route path="/browse**" component={Browser} />
+          <Route path={`${BROWSE_PATH}**`} component={Browser} />
+          <Route path={`${WEBM_PATH}**`} component={Viewer} />
         </Switch>
       </Layout.Content>
       <Layout.Footer style={{ textAlign: "center" }}>
