@@ -31,7 +31,7 @@ ReactDOM.render(
         </Switch>
       </Layout.Content>
       <Layout.Footer style={{ textAlign: "center" }}>
-        Keith MacKay ©2020
+        Keith MacKay ©2021
       </Layout.Footer>
     </Layout>
   </Router>,
