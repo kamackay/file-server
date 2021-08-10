@@ -10,8 +10,16 @@ import urljoin from "url-join";
 import { humanizeBytes } from "../utils/utils";
 
 export default withRouter(
-  (props: { file: FilerFile; path: string } & RouteComponentProps<any>) => {
-    const { file, path } = props;
+  (
+    props: {
+      file: FilerFile;
+      path: string;
+      link: string;
+    } & RouteComponentProps<any>
+  ) => {
+    const { file, path, link } = props;
+    const arr = window.location.href.split("/");
+    const domain = `${arr[0]}//${arr[2]}`;
     return (
       <Card
         size="small"
@@ -24,7 +32,14 @@ export default withRouter(
         extra={
           <>
             <Link to={`${urljoin(path, file.name)}`} children="View" />
-            <Button icon={<LinkIcon />} size="middle" />
+            <Button
+              icon={<LinkIcon />}
+              size="middle"
+              onClick={() => {
+                console.log({ domain, link });
+                navigator.clipboard.writeText(urljoin(domain, link));
+              }}
+            />
           </>
         }
       >

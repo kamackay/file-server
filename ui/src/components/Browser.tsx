@@ -158,6 +158,7 @@ export default withRouter(
                 <FilerFile
                   key={`${x}`}
                   path={urljoin(BROWSE_PATH, pathname || "")}
+                  link={urljoin(pathname || "/", file.name)}
                   file={file}
                 />
               );
