@@ -1,13 +1,13 @@
+import { Layout, PageHeader } from "antd";
+import "antd/dist/antd.css";
+import { createHashHistory } from "history";
 import React from "react";
 import ReactDOM from "react-dom";
-import { Router, Route, Switch } from "react-router-dom";
-import { createHashHistory } from "history";
-import "./index.less";
-import "antd/dist/antd.css";
-import asyncComponent from "./components/asyncComponent";
+import { Route, Router, Switch } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { Layout, PageHeader } from "antd";
+import asyncComponent from "./components/asyncComponent";
+import "./index.less";
 
 const MainPage = asyncComponent(() => import("./components/MainPage"));
 const Browser = asyncComponent(() => import("./components/Browser"));
@@ -28,7 +28,7 @@ ReactDOM.render(
         </Switch>
       </Layout.Content>
       <Layout.Footer style={{ textAlign: "center" }}>
-        Keith MacKay ©2020
+        Keith MacKay ©{new Date().getFullYear()}
       </Layout.Footer>
     </Layout>
   </Router>,

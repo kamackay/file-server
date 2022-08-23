@@ -17,13 +17,13 @@ COPY ./ ./
 
 RUN go build -tags=jsoniter -o application.file ./index.go && cp ./application.file /app/
 
-FROM node:alpine as react
+FROM node:16-alpine as react
 
 WORKDIR /app
 
-COPY ./ui/package.json ./
+COPY ./ui/package.json ./ui/yarn.lock ./
 
-RUN yarn
+RUN yarn --frozen-lockfile
 
 COPY ./ui/ ./
 
@@ -49,7 +49,6 @@ COPY --from=react /app/build /ui
 COPY ./mime.types /etc
 
 # FROM scratch
-
 # COPY --from=stage / /
 
 CMD /server
