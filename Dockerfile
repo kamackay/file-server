@@ -19,7 +19,7 @@ COPY ./ ./
 
 RUN go build -tags=jsoniter -o application.file ./index.go && cp ./application.file /app/
 
-FROM node:alpine as react
+FROM node:16-alpine as react
 
 WORKDIR /app
 
